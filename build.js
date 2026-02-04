@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 
 const supportedNodeBuiltins = [
-  'assert', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tty', 'url', 'util', 'vm', 'zlib'
+  'assert', 'console', 'constants', 'crypto', 'dns', 'domain', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tty', 'url', 'util', 'vm', 'zlib'
 ];
 
 const unsupportedNodeBuiltins = [
@@ -11,18 +11,31 @@ const unsupportedNodeBuiltins = [
 const nodeProtocolPlugin = {
     name: 'node-protocol-alias',
     setup(build) {
-        // Handle node:buffer externalization explicitly first
+        // Handle node:buffer externalization explicitly
         build.onResolve({ filter: /^node:buffer$/ }, () => ({ path: 'node:buffer', external: true }));
+        // Handle node:events externalization explicitly
+        build.onResolve({ filter: /^node:events$/ }, () => ({ path: 'node:events', external: true }));
 
-        // Special handling for buffer to ensure hasOwnProperty exists (fix for safer-buffer)
+        // Shim buffer
         build.onResolve({ filter: /^buffer$/ }, args => {
              return { path: args.path, namespace: 'node-buffer-shim' };
         });
-
         build.onLoad({ filter: /.*/, namespace: 'node-buffer-shim' }, () => ({
             contents: `
                 import * as buffer from 'node:buffer';
                 module.exports = { ...buffer };
+            `,
+            loader: 'js',
+        }));
+
+        // Shim events
+        build.onResolve({ filter: /^events$/ }, args => {
+             return { path: args.path, namespace: 'node-events-shim' };
+        });
+        build.onLoad({ filter: /.*/, namespace: 'node-events-shim' }, () => ({
+            contents: `
+                import EventEmitter from 'node:events';
+                module.exports = EventEmitter;
             `,
             loader: 'js',
         }));
