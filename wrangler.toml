@@ -9,6 +9,10 @@ command = "npm run build"
 [vars]
 # Environment variables will go here
 
+[[kv_namespaces]]
+binding = "vpsai_kv"
+id = "vpsai_kv_id"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
