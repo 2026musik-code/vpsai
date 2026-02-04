@@ -35,6 +35,9 @@ esbuild.build({
   platform: 'browser',
   target: 'esnext',
   plugins: [nodeFilePlugin, nodeProtocolPlugin],
+  banner: {
+    js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
+  },
   logLevel: 'info',
 }).catch((e) => {
     console.error(e);
