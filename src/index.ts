@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { serveStatic } from 'hono/cloudflare-workers';
 import { streamSSE } from 'hono/streaming';
 import { encryptSession, decryptSession } from './security';
 import { runSSHCommand, listRemoteFiles, readRemoteFile, runSSHCommandStream } from './ssh';
@@ -36,7 +35,9 @@ app.use('*', async (c, next) => {
 });
 
 // Serve Static Assets
-app.get('/*', serveStatic({ root: './' }));
+app.get('/*', async (c) => {
+    return await c.env.ASSETS.fetch(c.req.raw);
+});
 
 // API: Login (Create Session)
 app.post('/api/login', async (c) => {

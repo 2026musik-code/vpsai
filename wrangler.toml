@@ -9,5 +9,6 @@ command = "npm run build"
 [vars]
 # Environment variables will go here
 
-[site]
-bucket = "./public"
+[assets]
+directory = "./public"
+binding = "ASSETS"
