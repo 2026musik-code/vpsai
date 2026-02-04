@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { encryptSession, decryptSession } from './security';
-import { runSSHCommand, listRemoteFiles, readRemoteFile, runSSHCommandStream } from './ssh';
+import { runSSHCommand, listRemoteFiles, readRemoteFile, writeRemoteFile, runSSHCommandStream } from './ssh';
 import { getGeminiResponse } from './gemini';
 
 type Bindings = {
@@ -90,7 +90,7 @@ app.get('/api/chat-stream', async (c) => {
             // Send AI Text
             await stream.writeSSE({
                 event: 'ai-response',
-                data: aiResponse.text,
+                data: aiResponse.text || "No response text generated.",
             });
 
             // 2. If Command, Execute
@@ -157,6 +157,24 @@ app.get('/api/read', async (c) => {
     try {
         const content = await readRemoteFile(session, path);
         return c.json({ content });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// API: Write File
+app.post('/api/write', async (c) => {
+    const session = c.get('session');
+    const body = await c.req.json();
+    const { path, content } = body;
+
+    if (!path || content === undefined) {
+        return c.json({ error: 'Missing path or content' }, 400);
+    }
+
+    try {
+        await writeRemoteFile(session, path, content);
+        return c.json({ success: true });
     } catch (e: any) {
         return c.json({ error: e.message }, 500);
     }
