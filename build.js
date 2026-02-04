@@ -36,7 +36,13 @@ const nodeProtocolPlugin = {
         });
 
         build.onLoad({ filter: /.*/, namespace: 'node-unsupported-stub' }, () => ({
-            contents: 'module.exports = {}',
+            contents: `
+                class MockAgent {}
+                module.exports = {
+                    Agent: MockAgent,
+                    connect: () => {},
+                };
+            `,
             loader: 'js',
         }));
     }
