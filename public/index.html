@@ -1,114 +1,157 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VPS AI Dashboard</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
+    <div id="toast-container"></div>
+
     <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="container">
-        <div class="card login-card">
-            <h2><i class="fas fa-server"></i> VPS Connection</h2>
+    <div id="login-screen" class="screen active">
+        <div class="glass-card login-card animate-up">
+            <div class="brand">
+                <i class="fas fa-cube brand-icon"></i>
+                <h1>VPS AI <span class="accent">NEXUS</span></h1>
+            </div>
+            <p class="subtitle">Secure Intelligent Infrastructure Management</p>
+
             <form id="login-form">
-                <div class="form-group">
-                    <label>VPS IP Address</label>
-                    <input type="text" id="vps-ip" placeholder="192.168.1.1" required>
+                <div class="input-group">
+                    <i class="fas fa-network-wired"></i>
+                    <input type="text" id="vps-ip" placeholder="Server IP (e.g., 192.168.1.1)" required>
                 </div>
-                <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="vps-user" placeholder="root" required>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="vps-user" placeholder="Username (root)" required>
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="vps-pass" placeholder="********" required>
+                <div class="input-group">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="vps-pass" placeholder="Password / Private Key" required>
                 </div>
-                <hr>
-                <div class="form-group">
-                    <label>Gemini API Key</label>
-                    <input type="password" id="gemini-key" placeholder="AIzaSy..." required>
+
+                <div class="divider"><span>AI CONFIGURATION</span></div>
+
+                <div class="input-group">
+                    <i class="fas fa-robot"></i>
+                    <input type="password" id="gemini-key" placeholder="Gemini API Key" required>
                 </div>
-                <div class="form-group">
-                    <label>Gemini Model</label>
+                <div class="input-group">
+                    <i class="fas fa-brain"></i>
                     <select id="gemini-model">
-                        <option value="gemini-1.5-flash">Gemini 2.5 Flash (Preview)</option>
-                        <option value="gemini-1.5-pro">Gemini 2.5 Pro (Preview)</option>
-                        <option value="gemini-pro">Gemini 3.0 Flash (Preview)</option>
-                        <option value="gemini-ultra">Gemini 3.0 Pro (Preview)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-pro">Gemini 1.0 Pro</option>
                     </select>
                 </div>
-                <button type="submit" class="btn primary">Connect</button>
+
+                <button type="submit" class="btn-primary glow-effect">
+                    <span>Initialize Connection</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
             </form>
         </div>
     </div>
 
     <!-- MAIN DASHBOARD -->
-    <div id="dashboard" class="hidden">
-        <header>
-            <div class="logo">VPS AI Dashboard</div>
-            <div class="status">
-                <span id="connection-status" class="connected"><i class="fas fa-circle"></i> Connected</span>
-                <button id="disconnect-btn" class="btn small">Disconnect</button>
+    <div id="dashboard" class="screen hidden">
+        <header class="top-bar glass-panel">
+            <div class="nav-left">
+                <button id="toggle-files" class="icon-btn mobile-only"><i class="fas fa-folder"></i></button>
+                <div class="logo-area">
+                    <i class="fas fa-cube"></i>
+                    <span>NEXUS</span>
+                </div>
+            </div>
+
+            <div class="status-pill connected" id="connection-status">
+                <div class="pulse"></div>
+                <span>System Online</span>
+            </div>
+
+            <div class="nav-right">
+                <button id="toggle-chat" class="icon-btn mobile-only"><i class="fas fa-comment-alt"></i></button>
+                <button id="disconnect-btn" class="btn-danger"><i class="fas fa-power-off"></i></button>
             </div>
         </header>
 
-        <main>
+        <div class="main-layout">
             <!-- LEFT SIDEBAR: FILE MANAGER -->
-            <aside class="sidebar">
+            <aside id="file-sidebar" class="sidebar glass-panel left-panel">
                 <div class="sidebar-header">
-                    <h3>File Manager</h3>
-                    <button id="refresh-files" title="Refresh"><i class="fas fa-sync"></i></button>
+                    <h3><i class="fas fa-folder-open"></i> FILES</h3>
+                    <div class="actions">
+                        <button id="refresh-files" class="icon-btn tiny" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                        <button id="upload-file" class="icon-btn tiny" title="Upload"><i class="fas fa-cloud-upload-alt"></i></button>
+                    </div>
                 </div>
-                <div id="file-tree" class="file-tree">
-                    <!-- JS will populate this -->
-                    <div class="item">Loading...</div>
+                <div id="file-path-crumb" class="crumb-trail">~/</div>
+                <div id="file-tree" class="file-tree-content custom-scrollbar">
+                    <div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>
                 </div>
             </aside>
 
-            <!-- CENTER: EDITOR & TERMINAL -->
+            <!-- CENTER: WORKSPACE -->
             <section class="workspace">
-                <div class="editor-container">
-                    <div class="editor-header">
-                        <span id="current-file">No file selected</span>
-                        <div class="editor-actions">
-                            <button id="save-file" class="btn small primary"><i class="fas fa-save"></i> Save</button>
+                <!-- CODE EDITOR -->
+                <div class="editor-pane glass-panel">
+                    <div class="pane-header">
+                        <div class="file-tab">
+                            <i class="fas fa-code"></i>
+                            <span id="current-file">No File Selected</span>
                         </div>
+                        <button id="save-file" class="btn-primary small"><i class="fas fa-save"></i> Save</button>
                     </div>
-                    <textarea id="code-editor" placeholder="Select a file to edit..."></textarea>
+                    <textarea id="code-editor" class="custom-scrollbar" placeholder="// Select a file to view or edit..."></textarea>
                 </div>
 
-                <div class="terminal-container">
-                    <div class="terminal-header">Terminal Output</div>
-                    <div id="terminal-output" class="terminal-body">
-                        <div class="line system">Waiting for commands...</div>
+                <!-- TERMINAL -->
+                <div class="terminal-pane glass-panel">
+                    <div class="pane-header terminal-header">
+                        <span><i class="fas fa-terminal"></i> CONSOLE</span>
+                        <button class="icon-btn tiny" onclick="document.getElementById('terminal-output').innerHTML=''"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div id="terminal-output" class="terminal-content custom-scrollbar">
+                        <div class="term-line system"> Nexus AI Terminal v1.0.0 Ready...</div>
                     </div>
                 </div>
             </section>
 
             <!-- RIGHT SIDEBAR: AI CHAT -->
-            <aside class="chat-sidebar">
-                <div class="chat-header">
-                    <h3>AI Assistant</h3>
+            <aside id="chat-sidebar" class="sidebar glass-panel right-panel">
+                <div class="sidebar-header">
+                    <h3><i class="fas fa-sparkles"></i> AI ASSISTANT</h3>
                 </div>
-                <div id="chat-history" class="chat-history">
-                    <div class="message ai">
-                        Hello! I am connected to your VPS. Ask me to install packages, fix code, or manage files.
+                <div id="chat-history" class="chat-content custom-scrollbar">
+                    <div class="chat-msg ai animate-fade">
+                        <div class="avatar"><i class="fas fa-robot"></i></div>
+                        <div class="bubble">System initialized. I have full root access to your VPS. How can I assist?</div>
                     </div>
                 </div>
-                <div class="chat-input-area">
-                    <textarea id="chat-input" placeholder="Type instructions... (e.g., 'Install Nginx')"></textarea>
-                    <button id="send-chat" class="btn icon"><i class="fas fa-paper-plane"></i></button>
+
+                <div class="chat-input-wrapper">
+                    <textarea id="chat-input" placeholder="Ask AI to manage server..." rows="1"></textarea>
+                    <button id="send-chat" class="btn-send"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <div class="chat-actions">
-                    <button id="auto-install-btn" class="btn small secondary">Auto-Install AI Env</button>
+
+                <div class="quick-actions">
+                    <button id="auto-install-btn" class="pill-btn"><i class="fas fa-magic"></i> Auto-Setup Env</button>
                 </div>
             </aside>
-        </main>
+        </div>
     </div>
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" class="overlay hidden"></div>
 
     <script src="app.js"></script>
 </body>

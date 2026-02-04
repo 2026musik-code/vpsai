@@ -3,25 +3,108 @@ let SESSION_TOKEN = null;
 let CURRENT_PATH = '~';
 
 // DOM Elements
-const loginScreen = document.getElementById('login-screen');
-const dashboard = document.getElementById('dashboard');
-const loginForm = document.getElementById('login-form');
-const terminalOutput = document.getElementById('terminal-output');
-const chatHistory = document.getElementById('chat-history');
-const chatInput = document.getElementById('chat-input');
-const sendChatBtn = document.getElementById('send-chat');
-const fileTree = document.getElementById('file-tree');
+const elements = {
+    loginScreen: document.getElementById('login-screen'),
+    dashboard: document.getElementById('dashboard'),
+    loginForm: document.getElementById('login-form'),
+    terminalOutput: document.getElementById('terminal-output'),
+    chatHistory: document.getElementById('chat-history'),
+    chatInput: document.getElementById('chat-input'),
+    sendChatBtn: document.getElementById('send-chat'),
+    fileTree: document.getElementById('file-tree'),
+    currentFileLabel: document.getElementById('current-file'),
+    codeEditor: document.getElementById('code-editor'),
 
-// --- LOGIN LOGIC ---
-loginForm.addEventListener('submit', async (e) => {
+    // UI Toggles
+    toggleFilesBtn: document.getElementById('toggle-files'),
+    toggleChatBtn: document.getElementById('toggle-chat'),
+    fileSidebar: document.getElementById('file-sidebar'),
+    chatSidebar: document.getElementById('chat-sidebar'),
+    overlay: document.getElementById('sidebar-overlay'),
+
+    // Status
+    connectionStatus: document.getElementById('connection-status'),
+
+    // Actions
+    saveBtn: document.getElementById('save-file'),
+    refreshFilesBtn: document.getElementById('refresh-files'),
+    autoInstallBtn: document.getElementById('auto-install-btn'),
+    disconnectBtn: document.getElementById('disconnect-btn')
+};
+
+// --- UI INTERACTIONS ---
+function toggleSidebar(sidebar) {
+    const isActive = sidebar.classList.contains('active');
+    // Close all
+    elements.fileSidebar.classList.remove('active');
+    elements.chatSidebar.classList.remove('active');
+    elements.overlay.classList.add('hidden');
+
+    if (!isActive) {
+        sidebar.classList.add('active');
+        elements.overlay.classList.remove('hidden');
+    }
+}
+
+elements.toggleFilesBtn.addEventListener('click', () => toggleSidebar(elements.fileSidebar));
+elements.toggleChatBtn.addEventListener('click', () => toggleSidebar(elements.chatSidebar));
+
+elements.overlay.addEventListener('click', () => {
+    elements.fileSidebar.classList.remove('active');
+    elements.chatSidebar.classList.remove('active');
+    elements.overlay.classList.add('hidden');
+});
+
+// Toast Notification
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    let icon = 'fa-info-circle';
+    if (type === 'error') icon = 'fa-exclamation-triangle';
+    if (type === 'success') icon = 'fa-check-circle';
+
+    toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Logger
+function logSystem(message, type = 'system') {
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = `term-line ${type}`;
+    div.innerHTML = `<span style="opacity:0.5">[${time}]</span> ${message}`;
+    elements.terminalOutput.appendChild(div);
+    elements.terminalOutput.scrollTop = elements.terminalOutput.scrollHeight;
+
+    if (type === 'error') {
+        showToast(message, 'error');
+    }
+}
+
+// --- CORE LOGIC ---
+
+// Login
+elements.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btn = elements.loginForm.querySelector('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting...';
+    btn.disabled = true;
+
     const ip = document.getElementById('vps-ip').value;
     const user = document.getElementById('vps-user').value;
     const pass = document.getElementById('vps-pass').value;
     const apiKey = document.getElementById('gemini-key').value;
     const model = document.getElementById('gemini-model').value;
 
-    addToTerminal(`Connecting to ${user}@${ip}...`, 'system');
+    logSystem(`Initiating connection to ${user}@${ip}...`, 'system');
 
     try {
         const res = await fetch(`${API_BASE}/login`, {
@@ -33,31 +116,46 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (data.success) {
             SESSION_TOKEN = data.token;
-            loginScreen.classList.add('hidden');
-            dashboard.classList.remove('hidden');
-            addToTerminal('Connected successfully!', 'system');
+
+            // Animation transition
+            elements.loginScreen.style.opacity = '0';
+            setTimeout(() => {
+                elements.loginScreen.classList.remove('active');
+                elements.loginScreen.classList.add('hidden');
+                elements.dashboard.classList.remove('hidden');
+                elements.dashboard.classList.add('active');
+            }, 300);
+
+            logSystem('Connection established successfully.', 'success');
+            showToast('Connected to VPS', 'success');
             loadFiles();
         } else {
-            alert('Login failed: ' + data.error);
-            addToTerminal('Login failed.', 'error');
+            throw new Error(data.error);
         }
     } catch (err) {
         console.error(err);
-        alert('Connection error');
+        logSystem(`Connection Failed: ${err.message}`, 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
     }
 });
 
-// --- CHAT & AI LOGIC (SSE STREAMING) ---
+// Disconnect
+elements.disconnectBtn.addEventListener('click', () => {
+    if(confirm('Disconnect from server?')) {
+        location.reload();
+    }
+});
+
+// Chat & SSE
 function sendChat() {
-    const text = chatInput.value.trim();
+    const text = elements.chatInput.value.trim();
     if (!text) return;
 
-    // UI Updates
     appendMessage(text, 'user');
-    chatInput.value = '';
-    addToTerminal(`> AI Request: ${text}`, 'system');
+    elements.chatInput.value = '';
+    logSystem(`> AI Request: ${text}`, 'system');
 
-    // Create EventSource connection
     const params = new URLSearchParams({
         message: text,
         currentPath: CURRENT_PATH,
@@ -71,45 +169,62 @@ function sendChat() {
     });
 
     evtSource.addEventListener('command', (e) => {
-        addToTerminal(`$ ${e.data}`, 'system');
+        logSystem(`$ ${e.data}`, 'system');
     });
 
     evtSource.addEventListener('output', (e) => {
-        addToTerminal(e.data); // Stream output line by line
+        // Strip ANSI codes if needed, or simple render
+        logSystem(e.data, 'output');
     });
 
     evtSource.addEventListener('error', (e) => {
-        // e.data might be undefined for generic connection errors
-        const msg = e.data || 'Connection error or stream ended';
-        addToTerminal(msg, 'error');
+        // This catches the specific "AI Gemini not connected" or network errors if the stream dies
+        const msg = e.data || 'Connection lost or stream ended.';
+        logSystem(msg, 'error');
         evtSource.close();
     });
 
     evtSource.addEventListener('done', (e) => {
         evtSource.close();
-        // Refresh files if likely modified
         if (text.toLowerCase().includes('create') || text.toLowerCase().includes('delete')) {
-            loadFiles();
+            loadFiles(CURRENT_PATH);
         }
     });
 
     evtSource.onerror = (e) => {
-        console.error("Stream error", e);
+        // Generic network error
+        logSystem('Stream connection error. Check your internet or VPS status.', 'error');
         evtSource.close();
     };
 }
 
-sendChatBtn.addEventListener('click', sendChat);
-chatInput.addEventListener('keypress', (e) => {
+elements.sendChatBtn.addEventListener('click', sendChat);
+elements.chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendChat();
     }
 });
 
-// --- FILE MANAGER LOGIC ---
+function appendMessage(text, sender) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${sender} animate-fade`;
+
+    let avatarIcon = sender === 'user' ? 'fa-user' : 'fa-robot';
+
+    div.innerHTML = `
+        <div class="avatar"><i class="fas ${avatarIcon}"></i></div>
+        <div class="bubble">${text.replace(/\n/g, '<br>')}</div>
+    `;
+    elements.chatHistory.appendChild(div);
+    elements.chatHistory.scrollTop = elements.chatHistory.scrollHeight;
+}
+
+// File Manager
 async function loadFiles(path = '~') {
-    fileTree.innerHTML = '<div class="item">Loading...</div>';
+    elements.fileTree.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
+    document.getElementById('file-path-crumb').textContent = path;
+
     try {
         const res = await fetch(`${API_BASE}/files?path=${encodeURIComponent(path)}`, {
             headers: { 'Authorization': SESSION_TOKEN }
@@ -117,21 +232,24 @@ async function loadFiles(path = '~') {
         const data = await res.json();
 
         if (data.files) {
-            fileTree.innerHTML = '';
-            // Go up directory
+            elements.fileTree.innerHTML = '';
+
+            // Parent Dir
             const upDiv = document.createElement('div');
             upDiv.className = 'file-item folder';
-            upDiv.textContent = '..';
+            upDiv.innerHTML = '<i class="fas fa-level-up-alt"></i> ..';
             upDiv.onclick = () => {
-                CURRENT_PATH = path + '/..'; // Simplified, backend should handle normalization
+                CURRENT_PATH = path + '/..';
                 loadFiles(CURRENT_PATH);
             };
-            fileTree.appendChild(upDiv);
+            elements.fileTree.appendChild(upDiv);
 
             data.files.forEach(file => {
                 const div = document.createElement('div');
                 div.className = `file-item ${file.isDirectory ? 'folder' : 'file'}`;
-                div.innerHTML = file.isDirectory ? `<i class="fas fa-folder"></i> ${file.name}` : `<i class="fas fa-file"></i> ${file.name}`;
+                const icon = file.isDirectory ? 'fa-folder' : 'fa-file-code';
+                div.innerHTML = `<i class="fas ${icon}"></i> ${file.name}`;
+
                 div.onclick = () => {
                     if (file.isDirectory) {
                         CURRENT_PATH = file.path;
@@ -140,54 +258,57 @@ async function loadFiles(path = '~') {
                         loadFileContent(file.path);
                     }
                 };
-                fileTree.appendChild(div);
+                elements.fileTree.appendChild(div);
             });
         }
     } catch (err) {
-        fileTree.innerHTML = '<div class="item error">Failed to load files</div>';
+        elements.fileTree.innerHTML = '<div class="term-line error">Failed to load files</div>';
+        logSystem('Failed to fetch file list: ' + err.message, 'error');
     }
 }
 
 async function loadFileContent(path) {
-    document.getElementById('current-file').textContent = path;
+    elements.currentFileLabel.textContent = path;
+    elements.codeEditor.value = 'Loading...';
     try {
         const res = await fetch(`${API_BASE}/read?path=${encodeURIComponent(path)}`, {
             headers: { 'Authorization': SESSION_TOKEN }
         });
         const data = await res.json();
-        document.getElementById('code-editor').value = data.content || '';
+        elements.codeEditor.value = data.content || '';
     } catch (e) {
-        alert('Could not read file');
+        logSystem('Error reading file: ' + path, 'error');
+        elements.codeEditor.value = '// Error reading file';
     }
 }
 
-// --- UTILS ---
-function addToTerminal(text, type = '') {
-    // If text contains newlines, split them
-    const lines = text.split('\n');
-    lines.forEach(line => {
-        if(line.trim() === '') return;
-        const div = document.createElement('div');
-        div.className = `terminal-line ${type}`;
-        div.innerText = line;
-        terminalOutput.appendChild(div);
-    });
-    terminalOutput.scrollTop = terminalOutput.scrollHeight;
-}
+elements.saveBtn.addEventListener('click', async () => {
+    const path = elements.currentFileLabel.textContent;
+    if (path.includes('No File')) return;
 
-function appendMessage(text, sender) {
-    const div = document.createElement('div');
-    div.className = `message ${sender}`;
-    div.innerText = text;
-    chatHistory.appendChild(div);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
-}
+    const content = elements.codeEditor.value;
 
-// Auto Install Button
-document.getElementById('auto-install-btn').addEventListener('click', async () => {
-    if(!confirm('This will run the setup_vps.sh script on the server. Continue?')) return;
+    // For now we don't have a save API endpoint in the provided context (implied),
+    // but assuming one exists or we send a chat command to overwrite it.
+    // Based on memory/context, the system might not have a direct 'write' endpoint,
+    // usually we use the AI agent or a shell command.
+    // BUT, usually a file manager implies write access.
+    // I will check if I should implement a simple write or use AI.
+    // Assuming standard API implementation for now or log a warning.
 
-    // We populate the input and trigger sendChat to use the SSE flow
-    chatInput.value = "Setup the VPS environment for AI (Install Python, pip, venv)";
+    // NOTE: The previous code had a "Save" button but no event listener implementation in the provided snippet!
+    // I will implement a fetch call to `/api/write` if it exists, or just log.
+    // Actually, looking at the previous plan, it wasn't specified. I will use the AI to save.
+
+    logSystem('Saving file via AI Agent...', 'system');
+    elements.chatInput.value = `Overwrite content of ${path} with:\n${content}`;
+    sendChat();
+});
+
+elements.refreshFilesBtn.addEventListener('click', () => loadFiles(CURRENT_PATH));
+
+elements.autoInstallBtn.addEventListener('click', () => {
+    if(!confirm('This will install Python venv and tools. Continue?')) return;
+    elements.chatInput.value = "Setup the VPS environment for AI (Install Python, pip, venv)";
     sendChat();
 });

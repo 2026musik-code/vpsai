@@ -18,6 +18,7 @@ const nodeProtocolPlugin = {
 
         // Shim buffer
         build.onResolve({ filter: /^buffer$/ }, args => {
+             // console.log('Shimming buffer');
              return { path: args.path, namespace: 'node-buffer-shim' };
         });
         build.onLoad({ filter: /.*/, namespace: 'node-buffer-shim' }, () => ({
@@ -30,6 +31,7 @@ const nodeProtocolPlugin = {
 
         // Shim events
         build.onResolve({ filter: /^events$/ }, args => {
+             // console.log('Shimming events');
              return { path: args.path, namespace: 'node-events-shim' };
         });
         build.onLoad({ filter: /.*/, namespace: 'node-events-shim' }, () => ({
@@ -41,10 +43,12 @@ const nodeProtocolPlugin = {
         }));
 
         build.onResolve({ filter: new RegExp(`^(${supportedNodeBuiltins.join('|')})$`) }, args => {
+            // console.log(`Aliasing ${args.path} to node:${args.path}`);
             return { path: `node:${args.path}`, external: true };
         });
 
         build.onResolve({ filter: new RegExp(`^(${unsupportedNodeBuiltins.join('|')})$`) }, args => {
+             // console.log(`Stubbing unsupported module: ${args.path}`);
              return { path: args.path, namespace: 'node-unsupported-stub' };
         });
 
@@ -54,6 +58,11 @@ const nodeProtocolPlugin = {
                 module.exports = {
                     Agent: MockAgent,
                     connect: () => {},
+                    createConnection: () => {},
+                    readFile: () => {},
+                    readFileSync: () => {},
+                    writeFile: () => {},
+                    writeFileSync: () => {},
                 };
             `,
             loader: 'js',
@@ -64,10 +73,13 @@ const nodeProtocolPlugin = {
 const nodeFilePlugin = {
   name: 'node-file-stub',
   setup(build) {
-    build.onResolve({ filter: /\.node$/ }, args => ({
-      path: args.path,
-      namespace: 'node-file-stub',
-    }));
+    build.onResolve({ filter: /\.node$/ }, args => {
+      console.log(`Stubbing native module: ${args.path}`);
+      return {
+        path: args.path,
+        namespace: 'node-file-stub',
+      };
+    });
     build.onLoad({ filter: /.*/, namespace: 'node-file-stub' }, () => ({
       contents: 'module.exports = {}',
       loader: 'js',
@@ -75,7 +87,8 @@ const nodeFilePlugin = {
   },
 };
 
-console.log('Starting custom build...');
+console.log('Starting custom build with esbuild...');
+
 esbuild.build({
   entryPoints: ['src/index.ts'],
   bundle: true,
@@ -91,6 +104,6 @@ esbuild.build({
 }).then(() => {
     console.log('Custom build completed successfully.');
 }).catch((e) => {
-    console.error(e);
-    process.exit(1)
+    console.error('Custom build failed:', e);
+    process.exit(1);
 });
