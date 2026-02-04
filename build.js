@@ -1,15 +1,28 @@
 const esbuild = require('esbuild');
 
-const nodeBuiltins = [
-  'assert', 'buffer', 'child_process', 'cluster', 'console', 'constants', 'crypto', 'dgram', 'dns', 'domain', 'events', 'fs', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'
+const supportedNodeBuiltins = [
+  'assert', 'buffer', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'
+];
+
+const unsupportedNodeBuiltins = [
+    'fs', 'child_process', 'dgram', 'cluster'
 ];
 
 const nodeProtocolPlugin = {
     name: 'node-protocol-alias',
     setup(build) {
-        build.onResolve({ filter: new RegExp(`^(${nodeBuiltins.join('|')})$`) }, args => {
+        build.onResolve({ filter: new RegExp(`^(${supportedNodeBuiltins.join('|')})$`) }, args => {
             return { path: `node:${args.path}`, external: true };
         });
+
+        build.onResolve({ filter: new RegExp(`^(${unsupportedNodeBuiltins.join('|')})$`) }, args => {
+             return { path: args.path, namespace: 'node-unsupported-stub' };
+        });
+
+        build.onLoad({ filter: /.*/, namespace: 'node-unsupported-stub' }, () => ({
+            contents: 'module.exports = {}',
+            loader: 'js',
+        }));
     }
 }
 
