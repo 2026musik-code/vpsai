@@ -32,6 +32,45 @@ const elements = {
     disconnectBtn: document.getElementById('disconnect-btn')
 };
 
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    checkSession();
+});
+
+function checkSession() {
+    const storedToken = localStorage.getItem('vpsai_token');
+    if (storedToken) {
+        logSystem('Found existing session, attempting to reconnect...', 'system');
+        SESSION_TOKEN = storedToken;
+        // Verify token by trying to load files
+        // If it fails (401), we clear storage and show login
+        fetch(`${API_BASE}/files?path=~`, {
+            headers: { 'Authorization': SESSION_TOKEN }
+        })
+        .then(res => {
+            if (res.ok) {
+                restoreDashboard();
+            } else {
+                throw new Error('Session invalid');
+            }
+        })
+        .catch(() => {
+            localStorage.removeItem('vpsai_token');
+            // Stay on login screen
+        });
+    }
+}
+
+function restoreDashboard() {
+    elements.loginScreen.classList.remove('active');
+    elements.loginScreen.classList.add('hidden');
+    elements.dashboard.classList.remove('hidden');
+    elements.dashboard.classList.add('active');
+    logSystem('Session restored successfully.', 'success');
+    showToast('Session Restored', 'success');
+    loadFiles();
+}
+
 // --- UI INTERACTIONS ---
 function toggleSidebar(sidebar) {
     const isActive = sidebar.classList.contains('active');
@@ -116,6 +155,7 @@ elements.loginForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (data.success) {
             SESSION_TOKEN = data.token;
+            localStorage.setItem('vpsai_token', SESSION_TOKEN);
 
             // Animation transition
             elements.loginScreen.style.opacity = '0';
@@ -143,6 +183,7 @@ elements.loginForm.addEventListener('submit', async (e) => {
 // Disconnect
 elements.disconnectBtn.addEventListener('click', () => {
     if(confirm('Disconnect from server?')) {
+        localStorage.removeItem('vpsai_token');
         location.reload();
     }
 });
@@ -156,6 +197,10 @@ function sendChat() {
     elements.chatInput.value = '';
     logSystem(`> AI Request: ${text}`, 'system');
 
+    connectSSE(text);
+}
+
+function connectSSE(text, retryCount = 0) {
     const params = new URLSearchParams({
         message: text,
         currentPath: CURRENT_PATH,
@@ -173,13 +218,11 @@ function sendChat() {
     });
 
     evtSource.addEventListener('output', (e) => {
-        // Strip ANSI codes if needed, or simple render
         logSystem(e.data, 'output');
     });
 
     evtSource.addEventListener('error', (e) => {
-        // This catches the specific "AI Gemini not connected" or network errors if the stream dies
-        const msg = e.data || 'Connection lost or stream ended.';
+        const msg = e.data || 'Stream ended.';
         logSystem(msg, 'error');
         evtSource.close();
     });
@@ -192,9 +235,14 @@ function sendChat() {
     });
 
     evtSource.onerror = (e) => {
-        // Generic network error
-        logSystem('Stream connection error. Check your internet or VPS status.', 'error');
         evtSource.close();
+        // Simple auto-reconnect logic for network blips
+        if (retryCount < 3) {
+            logSystem(`Connection lost. Retrying (${retryCount + 1}/3)...`, 'system');
+            setTimeout(() => connectSSE(text, retryCount + 1), 2000);
+        } else {
+             logSystem('Connection failed after multiple attempts. Please try again.', 'error');
+        }
     };
 }
 
@@ -229,6 +277,14 @@ async function loadFiles(path = '~') {
         const res = await fetch(`${API_BASE}/files?path=${encodeURIComponent(path)}`, {
             headers: { 'Authorization': SESSION_TOKEN }
         });
+
+        if (res.status === 401) {
+            // Token expired during usage
+            localStorage.removeItem('vpsai_token');
+            location.reload();
+            return;
+        }
+
         const data = await res.json();
 
         if (data.files) {
@@ -287,19 +343,6 @@ elements.saveBtn.addEventListener('click', async () => {
     if (path.includes('No File')) return;
 
     const content = elements.codeEditor.value;
-
-    // For now we don't have a save API endpoint in the provided context (implied),
-    // but assuming one exists or we send a chat command to overwrite it.
-    // Based on memory/context, the system might not have a direct 'write' endpoint,
-    // usually we use the AI agent or a shell command.
-    // BUT, usually a file manager implies write access.
-    // I will check if I should implement a simple write or use AI.
-    // Assuming standard API implementation for now or log a warning.
-
-    // NOTE: The previous code had a "Save" button but no event listener implementation in the provided snippet!
-    // I will implement a fetch call to `/api/write` if it exists, or just log.
-    // Actually, looking at the previous plan, it wasn't specified. I will use the AI to save.
-
     logSystem('Saving file via AI Agent...', 'system');
     elements.chatInput.value = `Overwrite content of ${path} with:\n${content}`;
     sendChat();

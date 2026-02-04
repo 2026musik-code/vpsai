@@ -7,6 +7,7 @@ import { getGeminiResponse } from './gemini';
 type Bindings = {
     SECRET_KEY: string;
     ASSETS: Fetcher;
+    vpsai_kv: KVNamespace;
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
