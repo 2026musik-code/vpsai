@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 
 const supportedNodeBuiltins = [
-  'assert', 'buffer', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'
+  'assert', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'
 ];
 
 const unsupportedNodeBuiltins = [
@@ -11,6 +11,22 @@ const unsupportedNodeBuiltins = [
 const nodeProtocolPlugin = {
     name: 'node-protocol-alias',
     setup(build) {
+        // Handle node:buffer externalization explicitly first
+        build.onResolve({ filter: /^node:buffer$/ }, () => ({ path: 'node:buffer', external: true }));
+
+        // Special handling for buffer to ensure hasOwnProperty exists (fix for safer-buffer)
+        build.onResolve({ filter: /^buffer$/ }, args => {
+             return { path: args.path, namespace: 'node-buffer-shim' };
+        });
+
+        build.onLoad({ filter: /.*/, namespace: 'node-buffer-shim' }, () => ({
+            contents: `
+                import * as buffer from 'node:buffer';
+                module.exports = { ...buffer };
+            `,
+            loader: 'js',
+        }));
+
         build.onResolve({ filter: new RegExp(`^(${supportedNodeBuiltins.join('|')})$`) }, args => {
             return { path: `node:${args.path}`, external: true };
         });
