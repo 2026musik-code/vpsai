@@ -1,11 +1,11 @@
 const esbuild = require('esbuild');
 
 const supportedNodeBuiltins = [
-  'assert', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'vm', 'zlib'
+  'assert', 'console', 'constants', 'crypto', 'dns', 'domain', 'events', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tty', 'url', 'util', 'vm', 'zlib'
 ];
 
 const unsupportedNodeBuiltins = [
-    'fs', 'child_process', 'dgram', 'cluster'
+    'fs', 'child_process', 'dgram', 'cluster', 'http', 'https', 'tls'
 ];
 
 const nodeProtocolPlugin = {
