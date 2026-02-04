@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS AI Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="container">
+        <div class="card login-card">
+            <h2><i class="fas fa-server"></i> VPS Connection</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>VPS IP Address</label>
+                    <input type="text" id="vps-ip" placeholder="192.168.1.1" required>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="vps-user" placeholder="root" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="vps-pass" placeholder="********" required>
+                </div>
+                <hr>
+                <div class="form-group">
+                    <label>Gemini API Key</label>
+                    <input type="password" id="gemini-key" placeholder="AIzaSy..." required>
+                </div>
+                <div class="form-group">
+                    <label>Gemini Model</label>
+                    <select id="gemini-model">
+                        <option value="gemini-1.5-flash">Gemini 2.5 Flash (Preview)</option>
+                        <option value="gemini-1.5-pro">Gemini 2.5 Pro (Preview)</option>
+                        <option value="gemini-pro">Gemini 3.0 Flash (Preview)</option>
+                        <option value="gemini-ultra">Gemini 3.0 Pro (Preview)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn primary">Connect</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashboard" class="hidden">
+        <header>
+            <div class="logo">VPS AI Dashboard</div>
+            <div class="status">
+                <span id="connection-status" class="connected"><i class="fas fa-circle"></i> Connected</span>
+                <button id="disconnect-btn" class="btn small">Disconnect</button>
+            </div>
+        </header>
+
+        <main>
+            <!-- LEFT SIDEBAR: FILE MANAGER -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h3>File Manager</h3>
+                    <button id="refresh-files" title="Refresh"><i class="fas fa-sync"></i></button>
+                </div>
+                <div id="file-tree" class="file-tree">
+                    <!-- JS will populate this -->
+                    <div class="item">Loading...</div>
+                </div>
+            </aside>
+
+            <!-- CENTER: EDITOR & TERMINAL -->
+            <section class="workspace">
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <span id="current-file">No file selected</span>
+                        <div class="editor-actions">
+                            <button id="save-file" class="btn small primary"><i class="fas fa-save"></i> Save</button>
+                        </div>
+                    </div>
+                    <textarea id="code-editor" placeholder="Select a file to edit..."></textarea>
+                </div>
+
+                <div class="terminal-container">
+                    <div class="terminal-header">Terminal Output</div>
+                    <div id="terminal-output" class="terminal-body">
+                        <div class="line system">Waiting for commands...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT SIDEBAR: AI CHAT -->
+            <aside class="chat-sidebar">
+                <div class="chat-header">
+                    <h3>AI Assistant</h3>
+                </div>
+                <div id="chat-history" class="chat-history">
+                    <div class="message ai">
+                        Hello! I am connected to your VPS. Ask me to install packages, fix code, or manage files.
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chat-input" placeholder="Type instructions... (e.g., 'Install Nginx')"></textarea>
+                    <button id="send-chat" class="btn icon"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div class="chat-actions">
+                    <button id="auto-install-btn" class="btn small secondary">Auto-Install AI Env</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
