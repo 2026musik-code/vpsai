@@ -75,6 +75,7 @@ const nodeFilePlugin = {
   },
 };
 
+console.log('Starting custom build...');
 esbuild.build({
   entryPoints: ['src/index.ts'],
   bundle: true,
@@ -87,6 +88,8 @@ esbuild.build({
     js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url || 'file:///worker.js'); const __dirname = '/';",
   },
   logLevel: 'info',
+}).then(() => {
+    console.log('Custom build completed successfully.');
 }).catch((e) => {
     console.error(e);
     process.exit(1)
