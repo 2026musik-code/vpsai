@@ -1,0 +1,19 @@
+name = "vpsai"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Environment variables will go here
+
+[[kv_namespaces]]
+binding = "vpsai_kv"
+id = "vpsai_kv_id"
+
+[[r2_buckets]]
+binding = "vpsai_r2"
+bucket_name = "vpsia"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
