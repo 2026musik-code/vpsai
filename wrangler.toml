@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "vpsai_kv"
-id = "fc7e78f9ecec4a4b95fbf4ab82e1e057"
+id = "63e333fd63a64589a3faf57d48598cbe"
 
 [assets]
 directory = "./public"
