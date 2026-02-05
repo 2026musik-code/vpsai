@@ -16,7 +16,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Logger
 app.use('*', async (c, next) => {
-    console.log(`[${new Date().toISOString()}] ${c.req.method} ${c.req.url}`);
+    // console.log(`[${new Date().toISOString()}] ${c.req.method} ${c.req.url}`);
     await next();
 });
 
@@ -27,8 +27,9 @@ app.use('*', async (c, next) => {
     const now = Date.now();
     const lastRequest = rateLimit.get(ip) || 0;
 
-    // Limit to 1 request per second (rough)
-    if (now - lastRequest < 500) {
+    // Reduced to 100ms to allow parallel requests (e.g. file list + chat)
+    // and prevent false positives on rapid UI interactions.
+    if (now - lastRequest < 100) {
         return c.json({ error: 'Rate limit exceeded' }, 429);
     }
     rateLimit.set(ip, now);
