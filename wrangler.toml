@@ -12,7 +12,7 @@ id = "63e333fd63a64589a3faf57d48598cbe"
 
 [[r2_buckets]]
 binding = "vpsai_r2"
-bucket_name = "vpsia"
+bucket_name = "vpsai"
 
 [assets]
 directory = "./public"
