@@ -83,8 +83,11 @@ app.get('/api/chat-stream', async (c) => {
     if (!message) return c.json({ error: 'No message' }, 400);
 
     return streamSSE(c, async (stream) => {
-        // 1. Ask Gemini
+        // Send initial heartbeat/status to confirm connection
+        await stream.writeSSE({ event: 'status', data: 'Connecting to AI...' });
+
         try {
+            // 1. Ask Gemini
             const aiResponse = await getGeminiResponse(session.apiKey, session.model, message, currentPath);
 
             // Send AI Text
@@ -116,7 +119,7 @@ app.get('/api/chat-stream', async (c) => {
                         async (err) => {
                             await stream.writeSSE({
                                 event: 'error',
-                                data: err.message
+                                data: err.message || "SSH Error occurred"
                             });
                             resolve();
                         }
@@ -124,9 +127,11 @@ app.get('/api/chat-stream', async (c) => {
                 });
             }
         } catch (e: any) {
+            // Catch any unexpected top-level errors (like crypto failure, or ssh2 init failure)
+            console.error('Stream Error:', e);
             await stream.writeSSE({
                 event: 'error',
-                data: e.message
+                data: e.message || 'Unknown server error'
             });
         }
 

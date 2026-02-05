@@ -3,12 +3,23 @@ export type GeminiResponse = {
     command?: string;
 }
 
+function resolveModel(modelInput: string): string {
+    // Map requested "future" models to current working models to avoid 404s
+    // unless we know they exist.
+    // As of now, 2.5 and 3.0 are not public API endpoints.
+    // We will map them to the best available current model.
+    if (modelInput.includes('gemini-2.5') || modelInput.includes('gemini-3.0')) {
+        // Fallback to 1.5 Pro for "advanced" requests
+        return 'gemini-1.5-pro';
+    }
+    return modelInput || 'gemini-1.5-flash';
+}
+
 export async function getGeminiResponse(apiKey: string, model: string, userPrompt: string, currentPath: string): Promise<GeminiResponse> {
 
-    // Map UI model names to actual API models if needed, or pass through
-    // The UI sends "gemini-1.5-flash", "gemini-1.5-pro", etc.
-    const apiModel = model || 'gemini-1.5-flash';
+    const apiModel = resolveModel(model);
 
+    // API URL
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
 
     const systemPrompt = `
@@ -44,7 +55,7 @@ export async function getGeminiResponse(apiKey: string, model: string, userPromp
 
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`Gemini API Error: ${response.status} - ${errText}`);
+            throw new Error(`Gemini API Error (${apiModel}): ${response.status} - ${errText}`);
         }
 
         const data: any = await response.json();
