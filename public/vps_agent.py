@@ -18,6 +18,13 @@ def main():
     print(f">>> VPS Agent starting...")
     print(f">>> Connecting to {API_URL}")
 
+    # Initial Hello to wake up session
+    try:
+        requests.get(f"{API_URL}/api/agent/tasks", headers=HEADERS, timeout=10)
+        print(">>> Connected to Server!")
+    except:
+        pass
+
     while True:
         try:
             # 1. Heartbeat & Poll
@@ -33,13 +40,12 @@ def main():
                 sys.exit(1)
 
             if r.status_code != 200:
-                # No content or error, just sleep and retry
                 time.sleep(1)
                 continue
 
             data = r.json()
             task_id = data.get('id')
-            action = data.get('action') # 'exec', 'read', 'write', 'list', 'delete'
+            action = data.get('action')
             payload = data.get('payload', {})
 
             if task_id and action:
@@ -89,7 +95,6 @@ def main():
                                     'path': entry.path,
                                     'size': entry.stat().st_size if not entry.is_dir() else 0
                                 })
-                            # Sort: folders first, then files
                             items.sort(key=lambda x: (not x['isDirectory'], x['name']))
                             result['data'] = items
                             result['success'] = True
@@ -100,7 +105,7 @@ def main():
                          path = os.path.expanduser(payload.get('path'))
                          if os.path.exists(path):
                              if os.path.isdir(path):
-                                 os.rmdir(path) # Simple rmdir, use shutil for recursive if needed
+                                 os.rmdir(path)
                              else:
                                  os.remove(path)
                              result['success'] = True
@@ -108,21 +113,13 @@ def main():
                          else:
                              result['output'] = "Path not found"
 
-                    else:
-                        result['output'] = f"Unknown action: {action}"
-
                 except Exception as e:
                     result['output'] = f"Error: {str(e)}"
 
                 # Send Result
-                print(f">>> Sending Result for {task_id}...")
                 requests.post(f"{API_URL}/api/agent/result", headers=HEADERS, json=result)
 
-            else:
-                pass
-
         except KeyboardInterrupt:
-            print("\n>>> Stopping Agent.")
             break
         except Exception as e:
             print(f"\n!!! Unexpected Error: {e}")

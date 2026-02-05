@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>VPS AI Dashboard</title>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,52 +14,51 @@
 
     <div id="toast-container"></div>
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="screen active">
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="screen active">
         <div class="glass-card login-card animate-up">
             <div class="brand">
                 <i class="fas fa-cube brand-icon"></i>
                 <h1>VPS AI <span class="accent">NEXUS</span></h1>
             </div>
-            <p class="subtitle">Secure Intelligent Infrastructure Management</p>
+            <p class="subtitle">Secure Reverse Connection Agent</p>
 
-            <form id="login-form">
-                <div class="input-group">
-                    <i class="fas fa-network-wired"></i>
-                    <input type="text" id="vps-ip" placeholder="Server IP (e.g., 192.168.1.1)" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="vps-user" placeholder="Username (root)" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-key"></i>
-                    <input type="password" id="vps-pass" placeholder="Password / Private Key" required>
-                </div>
+            <!-- Step 1: Config -->
+            <div id="setup-step-1">
+                <form id="setup-form">
+                    <div class="input-group">
+                        <i class="fas fa-robot"></i>
+                        <input type="password" id="gemini-key" placeholder="Gemini API Key" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-brain"></i>
+                        <select id="gemini-model">
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recommended)</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Exp)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary glow-effect">
+                        <span>Generate Connection Script</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
 
-                <div class="divider"><span>AI CONFIGURATION</span></div>
-
-                <div class="input-group">
-                    <i class="fas fa-robot"></i>
-                    <input type="password" id="gemini-key" placeholder="Gemini API Key" required>
+            <!-- Step 2: Connection Script -->
+            <div id="setup-step-2" class="hidden">
+                <div class="instruction-box">
+                    <p>Run this command on your VPS:</p>
+                    <div class="code-block" id="install-command">
+                        Generating...
+                    </div>
+                    <button id="copy-btn" class="btn-secondary small"><i class="fas fa-copy"></i> Copy</button>
                 </div>
-                <div class="input-group">
-                    <i class="fas fa-brain"></i>
-                    <select id="gemini-model">
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                        <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
-                        <option value="gemini-3.0-pro">Gemini 3.0 Pro</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                    </select>
+                <div class="status-monitor">
+                    <div class="loader-pulse"></div>
+                    <span id="setup-status">Waiting for connection...</span>
                 </div>
-
-                <button type="submit" class="btn-primary glow-effect">
-                    <span>Initialize Connection</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -77,13 +74,9 @@
             </div>
 
             <div class="status-group">
-                <div class="status-pill connected" id="connection-status">
+                <div class="status-pill connected" id="agent-status">
                     <div class="pulse"></div>
-                    <span>System Online</span>
-                </div>
-                <div class="status-pill offline" id="agent-status">
-                    <div class="dot"></div>
-                    <span>Agent Offline</span>
+                    <span>Agent Online</span>
                 </div>
             </div>
 
@@ -100,7 +93,6 @@
                     <h3><i class="fas fa-folder-open"></i> FILES</h3>
                     <div class="actions">
                         <button id="refresh-files" class="icon-btn tiny" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-                        <button id="upload-file" class="icon-btn tiny" title="Upload"><i class="fas fa-cloud-upload-alt"></i></button>
                     </div>
                 </div>
                 <div id="file-path-crumb" class="crumb-trail">~/</div>
@@ -130,7 +122,7 @@
                         <button class="icon-btn tiny" onclick="document.getElementById('terminal-output').innerHTML=''"><i class="fas fa-trash"></i></button>
                     </div>
                     <div id="terminal-output" class="terminal-content custom-scrollbar">
-                        <div class="term-line system"> Nexus AI Terminal v1.0.0 Ready...</div>
+                        <div class="term-line system"> Nexus AI Terminal v2.0.0 Ready...</div>
                     </div>
                 </div>
             </section>
@@ -143,17 +135,13 @@
                 <div id="chat-history" class="chat-content custom-scrollbar">
                     <div class="chat-msg ai animate-fade">
                         <div class="avatar"><i class="fas fa-robot"></i></div>
-                        <div class="bubble">System initialized. I have full root access to your VPS. How can I assist?</div>
+                        <div class="bubble">System initialized. I am connected to your VPS Agent. How can I assist?</div>
                     </div>
                 </div>
 
                 <div class="chat-input-wrapper">
                     <textarea id="chat-input" placeholder="Ask AI to manage server..." rows="1"></textarea>
                     <button id="send-chat" class="btn-send"><i class="fas fa-paper-plane"></i></button>
-                </div>
-
-                <div class="quick-actions">
-                    <button id="auto-install-btn" class="pill-btn"><i class="fas fa-magic"></i> Auto-Setup Agent</button>
                 </div>
             </aside>
         </div>
