@@ -8,14 +8,19 @@ export type GeminiResponse = {
 // If the API returns 404, we might need to fallback.
 // For now, we will pass them through or map them if we know they are aliases.
 function resolveModel(modelInput: string): string {
+    // Map requests to currently available models in v1beta API (as of 2026)
     const map: Record<string, string> = {
-        'gemini-2.5-flash': 'gemini-1.5-flash', // Mapping to stable for reliability
-        'gemini-2.5-pro': 'gemini-1.5-pro',
-        'gemini-3.0-flash': 'gemini-1.5-flash',
-        'gemini-3.0-pro': 'gemini-1.5-pro',
-        // Keep originals if supported
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
+        // User requested future models -> Map to correct IDs found in docs
+        'gemini-2.5-flash': 'gemini-2.5-flash',
+        'gemini-2.5-pro': 'gemini-2.5-pro',
+        'gemini-3.0-flash': 'gemini-3-flash-preview',
+        'gemini-3.0-pro': 'gemini-3-pro-preview',
+
+        // Fix for 404s on 1.5 models (upgrade to 2.5 Flash as stable replacement)
+        'gemini-1.5-flash': 'gemini-2.5-flash',
+        'gemini-1.5-pro': 'gemini-2.5-pro',
+
+        // Pass through valid known experimental/preview models
         'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp'
     };
 
