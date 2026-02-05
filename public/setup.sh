@@ -1,35 +1,54 @@
 #!/bin/bash
 
 # VPS AI Environment Auto-Installer
-# Usage: ./setup_vps.sh
+# Usage: ./setup.sh <API_URL> <TOKEN>
+
+API_URL=$1
+TOKEN=$2
+
+if [ -z "$API_URL" ] || [ -z "$TOKEN" ]; then
+    echo "Usage: ./setup.sh <API_URL> <TOKEN>"
+    exit 1
+fi
 
 echo ">>> Starting AI Environment Setup..."
 
-# 1. Update Server
-echo ">>> Updating system packages..."
-sudo apt-get update && sudo apt-get upgrade -y
+# 1. Update Server (Optional - can be slow, skipping for speed in demo)
+# echo ">>> Updating system packages..."
+# sudo apt-get update
 
 # 2. Install Python & Basic Tools
-echo ">>> Installing Python3 and dependencies..."
-sudo apt-get install -y python3 python3-pip python3-venv git curl wget build-essential
+echo ">>> Checking Python3..."
+if ! command -v python3 &> /dev/null; then
+    echo "Installing Python3..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y python3 python3-pip
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y python3 python3-pip
+    fi
+else
+    echo "Python3 is already installed."
+fi
 
 # 3. Create Project Directory
-PROJECT_DIR=~/vps-ai-workspace
+PROJECT_DIR=~/vps-ai-agent
 echo ">>> Creating workspace at $PROJECT_DIR..."
 mkdir -p $PROJECT_DIR
 cd $PROJECT_DIR
 
-# 4. Create Virtual Environment
-echo ">>> Setting up virtual environment..."
-python3 -m venv venv
-source venv/bin/activate
+# 4. Download Agent Script
+echo ">>> Downloading Agent Script..."
+curl -sL "$API_URL/vps_agent.py" -o vps_agent.py
 
-# 5. Install Common AI Libraries (Lightweight set for generic tasks)
-# Adjust this list based on specific needs (TensorFlow/PyTorch are heavy)
-echo ">>> Installing AI helper libraries..."
-pip install --upgrade pip
-pip install numpy pandas requests python-dotenv
+# 5. Install Dependencies
+echo ">>> Installing dependencies..."
+pip3 install requests --break-system-packages 2>/dev/null || pip3 install requests
 
-echo ">>> Setup Complete!"
-echo ">>> Virtual Environment is located at: $PROJECT_DIR/venv"
-echo ">>> To activate: source ~/vps-ai-workspace/venv/bin/activate"
+# 6. Run Agent
+echo ">>> Starting Agent..."
+# Kill existing agent if running
+pkill -f vps_agent.py || true
+
+nohup python3 vps_agent.py "$API_URL" "$TOKEN" > agent.log 2>&1 &
+echo ">>> Agent Started! (PID: $!)"
+echo ">>> You can close this terminal now."
