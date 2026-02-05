@@ -146,7 +146,7 @@ elements.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = elements.loginForm.querySelector('button');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting...';
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting & Installing Agent...';
     btn.disabled = true;
 
     const ip = document.getElementById('vps-ip').value;
@@ -178,9 +178,12 @@ elements.loginForm.addEventListener('submit', async (e) => {
                 elements.dashboard.classList.add('active');
             }, 300);
 
-            logSystem('Connection established successfully.', 'success');
+            logSystem('Connection established.', 'success');
+            logSystem('Attempting to bootstrap Agent via SSH...', 'system');
             showToast('Connected to VPS', 'success');
-            loadFiles();
+
+            // Give the agent a moment to start up
+            setTimeout(() => loadFiles(), 2000);
         } else {
             throw new Error(data.error);
         }
@@ -226,7 +229,7 @@ function connectSSE(text, retryCount = 0) {
         // Check for Agent status in the message
         if (e.data.includes('Using VPS Agent')) {
             setAgentStatus(true);
-        } else if (e.data.includes('SSH Fallback')) {
+        } else if (e.data.includes('SSH Fallback') || e.data.includes('Agent Offline')) {
             setAgentStatus(false);
         }
     });
@@ -362,6 +365,9 @@ async function loadFiles(path = '~') {
                 };
                 elements.fileTree.appendChild(div);
             });
+
+            // Implicitly we can guess the agent is online if this worked fast,
+            // but the status is best updated via SSE.
         } else if (data.error) {
             throw new Error(data.error);
         }
@@ -438,24 +444,11 @@ elements.saveBtn.addEventListener('click', async () => {
 elements.refreshFilesBtn.addEventListener('click', () => loadFiles(CURRENT_PATH));
 
 elements.autoInstallBtn.addEventListener('click', () => {
-    if(!confirm('This will install the Python Agent on your VPS. It requires Python 3. Continue?')) return;
+    if(!confirm('Re-install Agent?')) return;
 
-    // Construct the command to download and run the setup script
     const baseUrl = window.location.origin;
-    // Pass API URL and Session Token to the agent script
     const cmd = `curl -sL ${baseUrl}/setup.sh | bash && curl -sL ${baseUrl}/vps_agent.py > ~/vps_agent.py && nohup python3 ~/vps_agent.py "${baseUrl}" "${SESSION_TOKEN}" > ~/agent.log 2>&1 &`;
 
-    elements.chatInput.value = "Installing Agent...";
-    // We send a hidden message or just execute it if we had a direct exec endpoint.
-    // Since everything goes through chat, we ask the AI to execute it, or better:
-    // We manually trigger the chat with this command.
-
-    // Actually, asking the AI "Run this command" is safer as it uses the existing pipeline.
-    // But sending the raw command is better for exact execution.
-    // The chat endpoint takes `message`. If `message` is just the command, the AI might explain it.
-    // We want the AI to *execute* it.
-
-    // Let's phrase it for the AI:
     const prompt = `Please execute this command to setup the agent: ${cmd}`;
     elements.chatInput.value = prompt;
     sendChat();

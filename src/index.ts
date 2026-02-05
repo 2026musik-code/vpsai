@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { encryptSession, decryptSession } from './security';
-import { runSSHCommand, listRemoteFiles, readRemoteFile, writeRemoteFile, runSSHCommandStream } from './ssh';
+import { runSSHCommand, listRemoteFiles, readRemoteFile, writeRemoteFile, runSSHCommandStream, installAgentSSH } from './ssh';
 import { getGeminiResponse } from './gemini';
 
 type Bindings = {
@@ -39,7 +39,7 @@ app.get('/*', async (c) => {
     return await c.env.ASSETS.fetch(c.req.raw);
 });
 
-// API: Login (Create Session)
+// API: Login (Create Session & Bootstrap)
 app.post('/api/login', async (c) => {
     const body = await c.req.json();
     const { ip, user, pass, apiKey, model } = body;
@@ -50,6 +50,26 @@ app.post('/api/login', async (c) => {
 
     const sessionData = { ip, user, pass, apiKey, model };
     const token = await encryptSession(sessionData, c.env.SECRET_KEY);
+
+    // Bootstrap Agent
+    // We try to install the agent via SSH. If it fails, we still return the token,
+    // but the frontend might see "Agent Offline" and prompt for manual install.
+    // The install is fire-and-forget to speed up login.
+    const apiUrl = new URL(c.req.url).origin;
+
+    // We don't await this because SSH might take a few seconds and we want instant login.
+    // However, for the user to see "Connected via Agent" immediately, maybe we should await?
+    // Let's await with a short timeout, or let it run in background (ctx.waitUntil).
+
+    c.executionCtx.waitUntil((async () => {
+        try {
+            console.log("Attempting Agent Bootstrap via SSH...");
+            await installAgentSSH(sessionData, apiUrl, token, apiUrl);
+            console.log("Agent Bootstrap command sent.");
+        } catch (e) {
+            console.error("Agent Bootstrap Failed:", e);
+        }
+    })());
 
     return c.json({ success: true, token });
 });
@@ -75,8 +95,6 @@ app.use('/api/*', async (c, next) => {
 
 // --- AGENT API (KV Based) ---
 
-// Helper: Get Session ID (using IP as simple key for now, or hash of token)
-// In a real app, use a unique ID per login. For now, IP is the "Machine".
 function getAgentKey(session: any) {
     return `agent:${session.ip}`;
 }
@@ -87,19 +105,17 @@ app.get('/api/agent/tasks', async (c) => {
     const key = getAgentKey(session);
 
     // Update Heartbeat
-    await c.env.vpsai_kv.put(`${key}:heartbeat`, Date.now().toString(), { expirationTtl: 60 }); // 1 min TTL
+    await c.env.vpsai_kv.put(`${key}:heartbeat`, Date.now().toString(), { expirationTtl: 60 });
 
     // Check for pending command
-    // We use a simple "one command at a time" queue for simplicity
-    const cmdJson = await c.env.vpsai_kv.get(`${key}:cmd`);
+    const taskJson = await c.env.vpsai_kv.get(`${key}:task`);
 
-    if (cmdJson) {
-        // Delete it so it's only executed once
-        await c.env.vpsai_kv.delete(`${key}:cmd`);
-        return c.json(JSON.parse(cmdJson));
+    if (taskJson) {
+        await c.env.vpsai_kv.delete(`${key}:task`);
+        return c.json(JSON.parse(taskJson));
     }
 
-    return c.json({}); // No tasks
+    return c.json({});
 });
 
 // 2. Post Result (Agent calls this)
@@ -109,46 +125,29 @@ app.post('/api/agent/result', async (c) => {
     const body = await c.req.json();
 
     // Store result
-    // We assume the ID matches the pending command
-    await c.env.vpsai_kv.put(`${key}:res`, JSON.stringify(body), { expirationTtl: 300 }); // 5 min TTL
+    await c.env.vpsai_kv.put(`${key}:res:${body.id}`, JSON.stringify(body), { expirationTtl: 300 });
     return c.json({ success: true });
 });
 
-// --- HELPER: Execute via Agent (Polling) ---
-async function runAgentCommandStream(c: any, session: any, command: string, onData: (data: string) => void, onClose: () => void, onError: (err: any) => void) {
+// --- HELPER: Execute via Agent ---
+async function runAgentTask(c: any, session: any, action: string, payload: any): Promise<any> {
     const key = getAgentKey(session);
-    const cmdId = Date.now().toString();
+    const taskId = Date.now().toString() + Math.random().toString().slice(2,6);
 
-    // 1. Push Command
-    const payload = { id: cmdId, command };
-    await c.env.vpsai_kv.put(`${key}:cmd`, JSON.stringify(payload));
+    const task = { id: taskId, action, payload };
+    await c.env.vpsai_kv.put(`${key}:task`, JSON.stringify(task));
 
-    // 2. Poll for Result
-    // Wait up to 30 seconds
+    // Poll for result
     const startTime = Date.now();
-    let done = false;
-
-    while (Date.now() - startTime < 30000 && !done) {
-        const resJson = await c.env.vpsai_kv.get(`${key}:res`);
+    while (Date.now() - startTime < 30000) {
+        const resJson = await c.env.vpsai_kv.get(`${key}:res:${taskId}`);
         if (resJson) {
-            const res = JSON.parse(resJson);
-            if (res.id === cmdId) {
-                // Found our result
-                if (res.output) onData(res.output);
-                // Clear result
-                await c.env.vpsai_kv.delete(`${key}:res`);
-                done = true;
-                onClose();
-                return;
-            }
+            await c.env.vpsai_kv.delete(`${key}:res:${taskId}`);
+            return JSON.parse(resJson);
         }
-        // Wait 500ms
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 200));
     }
-
-    if (!done) {
-        onError(new Error("Agent execution timed out (Agent might be disconnected)"));
-    }
+    throw new Error("Agent Timeout");
 }
 
 // API: Chat (Streaming SSE)
@@ -156,7 +155,7 @@ app.get('/api/chat-stream', async (c) => {
     const session = c.get('session');
     const message = c.req.query('message');
     const currentPath = c.req.query('currentPath') || '~';
-    const forceAgent = c.req.query('agent') === 'true'; // Allow forcing agent mode
+    const forceAgent = c.req.query('agent') === 'true';
 
     if (!message) return c.json({ error: 'No message' }, 400);
 
@@ -164,13 +163,15 @@ app.get('/api/chat-stream', async (c) => {
         await stream.writeSSE({ event: 'status', data: 'Connecting to AI...' });
 
         try {
-            // Check if Agent is Active
+            // Check Agent Status
             const key = getAgentKey(session);
             const lastHeartbeat = await c.env.vpsai_kv.get(`${key}:heartbeat`);
-            const isAgentActive = lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000); // 15s timeout
+            const isAgentActive = lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000);
 
             if (isAgentActive) {
-                 await stream.writeSSE({ event: 'status', data: 'Using VPS Agent (Stable Mode)' });
+                 await stream.writeSSE({ event: 'status', data: 'Using VPS Agent' });
+            } else {
+                 await stream.writeSSE({ event: 'status', data: 'Agent Offline. Falling back to SSH.' });
             }
 
             // 1. Ask Gemini
@@ -189,14 +190,15 @@ app.get('/api/chat-stream', async (c) => {
                 });
 
                 if (isAgentActive || forceAgent) {
-                    // Use Agent
-                    await runAgentCommandStream(c, session, aiResponse.command!,
-                        async (data) => stream.writeSSE({ event: 'output', data }),
-                        () => {},
-                        async (err) => stream.writeSSE({ event: 'error', data: err.message })
-                    );
+                    // Agent Execution
+                    try {
+                        const res = await runAgentTask(c, session, 'exec', { command: aiResponse.command });
+                        await stream.writeSSE({ event: 'output', data: res.output });
+                    } catch (err: any) {
+                        await stream.writeSSE({ event: 'error', data: err.message });
+                    }
                 } else {
-                    // Use SSH Fallback
+                    // SSH Fallback
                     await new Promise<void>((resolve) => {
                         runSSHCommandStream(
                             session,
@@ -230,7 +232,19 @@ app.get('/api/files', async (c) => {
     const session = c.get('session');
     const path = c.req.query('path') || '~';
 
-    // TODO: Implement Agent File Listing if needed. For now SSH fallback.
+    // Try Agent First
+    try {
+        const key = getAgentKey(session);
+        const lastHeartbeat = await c.env.vpsai_kv.get(`${key}:heartbeat`);
+        if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000)) {
+            const res = await runAgentTask(c, session, 'list', { path });
+            if(res.success) return c.json({ files: res.data });
+            else throw new Error(res.output);
+        }
+    } catch (e) {
+        // Fallback to SSH
+    }
+
     try {
         const files = await listRemoteFiles(session, path);
         return c.json({ files });
@@ -245,6 +259,19 @@ app.get('/api/read', async (c) => {
     const path = c.req.query('path');
 
     if(!path) return c.json({ error: 'No path' }, 400);
+
+    // Try Agent First
+    try {
+        const key = getAgentKey(session);
+        const lastHeartbeat = await c.env.vpsai_kv.get(`${key}:heartbeat`);
+        if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000)) {
+            const res = await runAgentTask(c, session, 'read', { path });
+            if(res.success) return c.json({ content: res.data });
+            else throw new Error(res.output);
+        }
+    } catch (e) {
+        // Fallback
+    }
 
     try {
         const content = await readRemoteFile(session, path);
@@ -262,6 +289,19 @@ app.post('/api/write', async (c) => {
 
     if (!path || content === undefined) {
         return c.json({ error: 'Missing path or content' }, 400);
+    }
+
+    // Try Agent First
+    try {
+        const key = getAgentKey(session);
+        const lastHeartbeat = await c.env.vpsai_kv.get(`${key}:heartbeat`);
+        if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000)) {
+            const res = await runAgentTask(c, session, 'write', { path, content });
+            if(res.success) return c.json({ success: true });
+            else throw new Error(res.output);
+        }
+    } catch (e) {
+        // Fallback
     }
 
     try {

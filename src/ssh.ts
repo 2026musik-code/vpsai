@@ -175,3 +175,32 @@ export function writeRemoteFile(session: any, path: string, content: string): Pr
         });
     });
 }
+
+export function installAgentSSH(session: any, agentUrl: string, token: string, apiUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            // Command to download and install agent
+            const cmd = `curl -sL ${apiUrl}/setup.sh | bash && curl -sL ${apiUrl}/vps_agent.py > ~/vps_agent.py && nohup python3 ~/vps_agent.py "${apiUrl}" "${token}" > ~/agent.log 2>&1 &`;
+
+            conn.exec(cmd, (err, stream) => {
+                if (err) {
+                    conn.end();
+                    return reject(err);
+                }
+                stream.on('close', (code: any, signal: any) => {
+                    conn.end();
+                    resolve();
+                }).on('data', () => {}).stderr.on('data', () => {});
+            });
+        }).on('error', (err) => {
+            reject(err);
+        }).connect({
+            host: session.ip,
+            port: 22,
+            username: session.user,
+            password: session.pass,
+            readyTimeout: 10000,
+        });
+    });
+}
