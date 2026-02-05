@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
-import { encryptSession, decryptSession } from './security';
 import { getGeminiResponse } from './gemini';
 
 type Bindings = {
-    SECRET_KEY: string;
     ASSETS: Fetcher;
     vpsai_kv: KVNamespace;
 }
@@ -20,28 +18,34 @@ app.use('*', async (c, next) => {
 
 // 1. Create Session (Web calls this)
 app.post('/api/session/create', async (c) => {
-    const body = await c.req.json();
-    const { apiKey, model } = body;
+    try {
+        const body = await c.req.json();
+        const { apiKey, model } = body;
 
-    if (!apiKey) return c.json({ error: 'API Key Required' }, 400);
+        if (!apiKey) return c.json({ error: 'API Key Required' }, 400);
 
-    // Create a unique session ID (Token)
-    // In a real app, use crypto.randomUUID()
-    const sessionId = crypto.randomUUID();
+        // Create a unique session ID (Token)
+        const sessionId = crypto.randomUUID();
 
-    // Store session config in KV
-    const sessionConfig = {
-        apiKey,
-        model,
-        created: Date.now(),
-        status: 'waiting' // waiting -> connected
-    };
+        // Store session config in KV
+        const sessionConfig = {
+            apiKey,
+            model,
+            created: Date.now(),
+            status: 'waiting' // waiting -> connected
+        };
 
-    // We use the sessionId as the token for simplicity in this demo
-    // The Token sent to the Agent will be this sessionId
-    await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(sessionConfig), { expirationTtl: 86400 }); // 24h
+        try {
+            await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(sessionConfig), { expirationTtl: 86400 }); // 24h
+        } catch (e: any) {
+            console.error("KV Error:", e);
+            return c.json({ error: `Server Configuration Error: KV Namespace not binding. (${e.message})` }, 500);
+        }
 
-    return c.json({ success: true, sessionId });
+        return c.json({ success: true, sessionId });
+    } catch (e: any) {
+        return c.json({ error: `Internal Error: ${e.message}` }, 500);
+    }
 });
 
 // 2. Poll Status (Web calls this)
@@ -49,26 +53,29 @@ app.get('/api/session/status', async (c) => {
     const sessionId = c.req.header('Authorization');
     if (!sessionId) return c.json({ error: 'No Token' }, 401);
 
-    const sessionData = await c.env.vpsai_kv.get(`session:${sessionId}`);
-    if (!sessionData) return c.json({ status: 'invalid' });
+    try {
+        const sessionData = await c.env.vpsai_kv.get(`session:${sessionId}`);
+        if (!sessionData) return c.json({ status: 'invalid' });
 
-    const session = JSON.parse(sessionData);
+        const session = JSON.parse(sessionData);
 
-    // Check heartbeat
-    const lastHeartbeat = await c.env.vpsai_kv.get(`agent:${sessionId}:heartbeat`);
-    if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000)) {
-        if (session.status !== 'connected') {
-            session.status = 'connected';
-            await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(session));
+        // Check heartbeat
+        const lastHeartbeat = await c.env.vpsai_kv.get(`agent:${sessionId}:heartbeat`);
+        if (lastHeartbeat && (Date.now() - parseInt(lastHeartbeat) < 15000)) {
+            if (session.status !== 'connected') {
+                session.status = 'connected';
+                await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(session));
+            }
+        } else {
+            if (session.status === 'connected') {
+                session.status = 'offline';
+            }
         }
-    } else {
-        if (session.status === 'connected') {
-            session.status = 'offline'; // Was connected, now lost
-            // Don't update KV immediately to avoid flickering, just return status
-        }
+
+        return c.json({ status: session.status, lastHeartbeat });
+    } catch (e: any) {
+         return c.json({ error: "KV Error" }, 500);
     }
-
-    return c.json({ status: session.status, lastHeartbeat });
 });
 
 // --- AGENT API (Called by VPS) ---
@@ -78,9 +85,12 @@ app.use('/api/agent/*', async (c, next) => {
     const token = c.req.header('Authorization');
     if (!token) return c.json({ error: 'Unauthorized' }, 401);
 
-    // The token IS the sessionId
-    const sessionData = await c.env.vpsai_kv.get(`session:${token}`);
-    if (!sessionData) return c.json({ error: 'Invalid Session' }, 401);
+    try {
+        const sessionData = await c.env.vpsai_kv.get(`session:${token}`);
+        if (!sessionData) return c.json({ error: 'Invalid Session' }, 401);
+    } catch (e) {
+        return c.json({ error: 'KV Error' }, 500);
+    }
 
     c.set('sessionId', token);
     await next();
@@ -90,15 +100,19 @@ app.use('/api/agent/*', async (c, next) => {
 app.get('/api/agent/tasks', async (c) => {
     const sessionId = c.get('sessionId');
 
-    // Update Heartbeat
-    await c.env.vpsai_kv.put(`agent:${sessionId}:heartbeat`, Date.now().toString(), { expirationTtl: 60 });
+    try {
+        // Update Heartbeat
+        await c.env.vpsai_kv.put(`agent:${sessionId}:heartbeat`, Date.now().toString(), { expirationTtl: 60 });
 
-    // Check for pending tasks
-    const taskJson = await c.env.vpsai_kv.get(`agent:${sessionId}:task`);
+        // Check for pending tasks
+        const taskJson = await c.env.vpsai_kv.get(`agent:${sessionId}:task`);
 
-    if (taskJson) {
-        await c.env.vpsai_kv.delete(`agent:${sessionId}:task`);
-        return c.json(JSON.parse(taskJson));
+        if (taskJson) {
+            await c.env.vpsai_kv.delete(`agent:${sessionId}:task`);
+            return c.json(JSON.parse(taskJson));
+        }
+    } catch (e) {
+        return c.json({ error: "KV Error" }, 500);
     }
 
     return c.json({});
@@ -109,9 +123,13 @@ app.post('/api/agent/result', async (c) => {
     const sessionId = c.get('sessionId');
     const body = await c.req.json();
 
-    // Store result
-    await c.env.vpsai_kv.put(`agent:${sessionId}:res:${body.id}`, JSON.stringify(body), { expirationTtl: 300 });
-    return c.json({ success: true });
+    try {
+        // Store result
+        await c.env.vpsai_kv.put(`agent:${sessionId}:res:${body.id}`, JSON.stringify(body), { expirationTtl: 300 });
+        return c.json({ success: true });
+    } catch(e) {
+        return c.json({ error: "KV Error" }, 500);
+    }
 });
 
 
@@ -196,9 +214,14 @@ app.get('/api/chat-stream', async (c) => {
     if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
 
     // Get Session Config (for API Key)
-    const sessionJson = await c.env.vpsai_kv.get(`session:${sessionId}`);
-    if (!sessionJson) return c.json({ error: 'Session Expired' }, 401);
-    const session = JSON.parse(sessionJson);
+    let session;
+    try {
+        const sessionJson = await c.env.vpsai_kv.get(`session:${sessionId}`);
+        if (!sessionJson) return c.json({ error: 'Session Expired' }, 401);
+        session = JSON.parse(sessionJson);
+    } catch (e) {
+        return c.json({ error: "KV Error" }, 500);
+    }
 
     return streamSSE(c, async (stream) => {
         try {
@@ -227,9 +250,9 @@ app.get('/api/chat-stream', async (c) => {
     });
 });
 
-export default app;
-
 // Serve Static Assets (Must be last)
 app.get('/*', async (c) => {
     return await c.env.ASSETS.fetch(c.req.raw);
 });
+
+export default app;

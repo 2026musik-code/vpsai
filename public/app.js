@@ -80,6 +80,7 @@ elements.setupForm.addEventListener('submit', async (e) => {
     const apiKey = document.getElementById('gemini-key').value;
     const model = document.getElementById('gemini-model').value;
     const btn = elements.setupForm.querySelector('button');
+    const originalText = btn.innerHTML;
 
     btn.disabled = true;
     btn.innerHTML = 'Creating Session...';
@@ -90,7 +91,17 @@ elements.setupForm.addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ apiKey, model })
         });
-        const data = await res.json();
+
+        // Robust Error Handling
+        let data;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await res.json();
+        } else {
+            // If server returns text (e.g. 500 Internal Server Error)
+            const text = await res.text();
+            throw new Error(`Server Error: ${text}`);
+        }
 
         if (data.success) {
             SESSION_ID = data.sessionId;
@@ -102,12 +113,13 @@ elements.setupForm.addEventListener('submit', async (e) => {
             generateCommand(SESSION_ID);
             pollConnection();
         } else {
-            alert(data.error);
-            btn.disabled = false;
+            throw new Error(data.error || 'Failed to create session');
         }
     } catch (e) {
-        alert('Error: ' + e.message);
+        console.error(e);
+        alert(e.message);
         btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 });
 
@@ -245,8 +257,14 @@ async function loadFiles(path = '~') {
             headers: { 'Authorization': SESSION_ID }
         });
 
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
+        let data;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await res.json();
+        } else {
+             const text = await res.text();
+             throw new Error(text || res.statusText);
+        }
 
         if (data.files) {
             elements.fileTree.innerHTML = '';
