@@ -102,8 +102,11 @@ app.get('/api/agent/tasks', async (c) => {
     const sessionId = c.get('sessionId');
 
     try {
-        // Update Heartbeat
-        await c.env.vpsai_kv.put(`agent:${sessionId}:heartbeat`, Date.now().toString(), { expirationTtl: 60 });
+        // Update Heartbeat (Throttled)
+        const lastHeartbeat = await c.env.vpsai_kv.get(`agent:${sessionId}:heartbeat`);
+        if (!lastHeartbeat || (Date.now() - parseInt(lastHeartbeat) > 30000)) {
+             await c.env.vpsai_kv.put(`agent:${sessionId}:heartbeat`, Date.now().toString(), { expirationTtl: 60 });
+        }
 
         // Check for pending tasks
         const taskJson = await c.env.vpsai_kv.get(`agent:${sessionId}:task`);
