@@ -47,7 +47,7 @@ function checkSession() {
         fetch(`${API_BASE}/files?path=~`, {
             headers: { 'Authorization': SESSION_TOKEN }
         })
-        .then(res => {
+        .then(async res => {
             if (res.ok) {
                 restoreDashboard();
             } else {
@@ -304,6 +304,15 @@ async function loadFiles(path = '~') {
             return;
         }
 
+        if (res.status === 429) {
+            throw new Error('System busy (Rate limit). Please wait a moment.');
+        }
+
+        if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || res.statusText);
+        }
+
         const data = await res.json();
 
         if (data.files) {
@@ -358,11 +367,21 @@ async function loadFileContent(path) {
         const res = await fetch(`${API_BASE}/read?path=${encodeURIComponent(path)}`, {
             headers: { 'Authorization': SESSION_TOKEN }
         });
+
+        if (res.status === 429) {
+            elements.codeEditor.value = '// System busy (Rate limit). Try again.';
+            return;
+        }
+        if (!res.ok) {
+             const txt = await res.text();
+             throw new Error(txt);
+        }
+
         const data = await res.json();
         elements.codeEditor.value = data.content || '';
     } catch (e) {
         logSystem('Error reading file: ' + path, 'error');
-        elements.codeEditor.value = '// Error reading file';
+        elements.codeEditor.value = '// Error reading file: ' + e.message;
     }
 }
 
@@ -385,6 +404,10 @@ elements.saveBtn.addEventListener('click', async () => {
             },
             body: JSON.stringify({ path, content })
         });
+
+        if (res.status === 429) throw new Error('System busy. Please wait.');
+        if (!res.ok) throw new Error(await res.text());
+
         const data = await res.json();
 
         if (data.success) {

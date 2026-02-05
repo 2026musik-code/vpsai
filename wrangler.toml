@@ -11,7 +11,7 @@ command = "npm run build"
 
 [[kv_namespaces]]
 binding = "vpsai_kv"
-id = "fc7e78f9ecec4a4b95fbf4ab82e1e057"
+id = "vpsai_kv_id"
 
 [assets]
 directory = "./public"
