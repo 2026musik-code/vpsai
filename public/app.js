@@ -195,7 +195,7 @@ function sendChat() {
 
     appendMessage(text, 'user');
     elements.chatInput.value = '';
-    logSystem(`> AI Request: ${text}`, 'system');
+    // logSystem(`> AI Request: ${text}`, 'system');
 
     connectSSE(text);
 }
@@ -209,25 +209,39 @@ function connectSSE(text, retryCount = 0) {
 
     const evtSource = new EventSource(`${API_BASE}/chat-stream?${params.toString()}`);
 
+    // Track if we received ANY message to distinguish between immediate fail vs mid-stream fail
+    let receivedData = false;
+
+    evtSource.addEventListener('status', (e) => {
+        receivedData = true;
+        // Optional: show a spinner or status text
+    });
+
     evtSource.addEventListener('ai-response', (e) => {
+        receivedData = true;
         appendMessage(e.data, 'ai');
     });
 
     evtSource.addEventListener('command', (e) => {
+        receivedData = true;
         logSystem(`$ ${e.data}`, 'system');
     });
 
     evtSource.addEventListener('output', (e) => {
+        receivedData = true;
         logSystem(e.data, 'output');
     });
 
     evtSource.addEventListener('error', (e) => {
-        const msg = e.data || 'Stream ended.';
+        // This handles explicit "event: error" from server
+        receivedData = true;
+        const msg = e.data || 'An unknown error occurred on the server.';
         logSystem(msg, 'error');
         evtSource.close();
     });
 
     evtSource.addEventListener('done', (e) => {
+        receivedData = true;
         evtSource.close();
         if (text.toLowerCase().includes('create') || text.toLowerCase().includes('delete') || text.toLowerCase().includes('touch') || text.toLowerCase().includes('mkdir')) {
             loadFiles(CURRENT_PATH);
@@ -235,13 +249,18 @@ function connectSSE(text, retryCount = 0) {
     });
 
     evtSource.onerror = (e) => {
+        // This handles generic network errors (500, timeout, disconnect)
         evtSource.close();
-        // Simple auto-reconnect logic for network blips
-        if (retryCount < 3) {
+
+        if (!receivedData && retryCount < 3) {
             logSystem(`Connection lost. Retrying (${retryCount + 1}/3)...`, 'system');
             setTimeout(() => connectSSE(text, retryCount + 1), 2000);
         } else {
-             logSystem('Connection failed after multiple attempts. Please try again.', 'error');
+            if (!receivedData) {
+                logSystem('Connection failed. Server might be overloaded or crashed.', 'error');
+            } else {
+                logSystem('Stream interrupted.', 'error');
+            }
         }
     };
 }
