@@ -27,15 +27,17 @@
             <div id="setup-step-1">
                 <form id="setup-form">
                     <div class="input-group">
-                        <i class="fas fa-robot"></i>
+                        <i class="fas fa-key"></i>
                         <input type="password" id="gemini-key" placeholder="Gemini API Key" required>
                     </div>
                     <div class="input-group">
                         <i class="fas fa-brain"></i>
                         <select id="gemini-model">
-                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recommended)</option>
-                            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                            <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Exp)</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                            <option value="gemini-3.0-flash">Gemini 3.0 Flash</option>
+                            <option value="gemini-3.0-pro">Gemini 3.0 Pro</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Stable)</option>
                         </select>
                     </div>
                     <button type="submit" class="btn-primary glow-effect">
@@ -55,7 +57,9 @@
                     <button id="copy-btn" class="btn-secondary small"><i class="fas fa-copy"></i> Copy</button>
                 </div>
                 <div class="status-monitor">
-                    <div class="loader-pulse"></div>
+                    <div class="loader-pulse">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                    </div>
                     <span id="setup-status">Waiting for connection...</span>
                 </div>
             </div>
