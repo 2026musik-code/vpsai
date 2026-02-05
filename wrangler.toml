@@ -8,11 +8,11 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "vpsai_kv"
-id = "63e333fd63a64589a3faf57d48598cbe"
+id = "vpsai_kv_id"
 
 [[r2_buckets]]
-binding = "vpsai"
-bucket_name = "0d1733a2241079f608a208cb4c2aa9c5"
+binding = "vpsai_r2"
+bucket_name = "vpsia"
 
 [assets]
 directory = "./public"
