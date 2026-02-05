@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [[kv_namespaces]]
 binding = "vpsai_kv"
-id = "26ff9ef4fcce4323a96c102d6bf5d52b"
+id = "vpsai_kv_id"
 
 [[r2_buckets]]
 binding = "vpsai_r2"
