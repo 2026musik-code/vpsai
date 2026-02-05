@@ -1,6 +1,7 @@
 {
   "name": "vpsai",
   "version": "1.0.0",
+  "main": "dist/index.js",
   "scripts": {
     "build": "node build.js",
     "dev": "npm run build && wrangler dev",
