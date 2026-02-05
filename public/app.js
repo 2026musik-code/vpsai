@@ -24,6 +24,7 @@ const elements = {
 
     // Status
     connectionStatus: document.getElementById('connection-status'),
+    agentStatus: document.getElementById('agent-status'),
 
     // Actions
     saveBtn: document.getElementById('save-file'),
@@ -43,7 +44,6 @@ function checkSession() {
         logSystem('Found existing session, attempting to reconnect...', 'system');
         SESSION_TOKEN = storedToken;
         // Verify token by trying to load files
-        // If it fails (401), we clear storage and show login
         fetch(`${API_BASE}/files?path=~`, {
             headers: { 'Authorization': SESSION_TOKEN }
         })
@@ -69,6 +69,18 @@ function restoreDashboard() {
     logSystem('Session restored successfully.', 'success');
     showToast('Session Restored', 'success');
     loadFiles();
+}
+
+function setAgentStatus(active) {
+    if (active) {
+        elements.agentStatus.classList.remove('offline');
+        elements.agentStatus.classList.add('connected');
+        elements.agentStatus.querySelector('span').textContent = 'Agent Online';
+    } else {
+        elements.agentStatus.classList.remove('connected');
+        elements.agentStatus.classList.add('offline');
+        elements.agentStatus.querySelector('span').textContent = 'Agent Offline';
+    }
 }
 
 // --- UI INTERACTIONS ---
@@ -195,7 +207,6 @@ function sendChat() {
 
     appendMessage(text, 'user');
     elements.chatInput.value = '';
-    // logSystem(`> AI Request: ${text}`, 'system');
 
     connectSSE(text);
 }
@@ -208,13 +219,16 @@ function connectSSE(text, retryCount = 0) {
     });
 
     const evtSource = new EventSource(`${API_BASE}/chat-stream?${params.toString()}`);
-
-    // Track if we received ANY message to distinguish between immediate fail vs mid-stream fail
     let receivedData = false;
 
     evtSource.addEventListener('status', (e) => {
         receivedData = true;
-        // Optional: show a spinner or status text
+        // Check for Agent status in the message
+        if (e.data.includes('Using VPS Agent')) {
+            setAgentStatus(true);
+        } else if (e.data.includes('SSH Fallback')) {
+            setAgentStatus(false);
+        }
     });
 
     evtSource.addEventListener('ai-response', (e) => {
@@ -233,7 +247,6 @@ function connectSSE(text, retryCount = 0) {
     });
 
     evtSource.addEventListener('error', (e) => {
-        // This handles explicit "event: error" from server
         receivedData = true;
         const msg = e.data || 'An unknown error occurred on the server.';
         logSystem(msg, 'error');
@@ -249,7 +262,6 @@ function connectSSE(text, retryCount = 0) {
     });
 
     evtSource.onerror = (e) => {
-        // This handles generic network errors (500, timeout, disconnect)
         evtSource.close();
 
         if (!receivedData && retryCount < 3) {
@@ -298,7 +310,6 @@ async function loadFiles(path = '~') {
         });
 
         if (res.status === 401) {
-            // Token expired during usage
             localStorage.removeItem('vpsai_token');
             location.reload();
             return;
@@ -326,7 +337,7 @@ async function loadFiles(path = '~') {
                 const parts = CURRENT_PATH.split('/').filter(p => p !== '');
                 parts.pop();
                 CURRENT_PATH = parts.length === 0 ? '~' : parts.join('/');
-                if(path === '~') CURRENT_PATH = '~'; // Keep at root
+                if(path === '~') CURRENT_PATH = '~';
                 loadFiles(CURRENT_PATH);
             };
             elements.fileTree.appendChild(upDiv);
@@ -427,7 +438,25 @@ elements.saveBtn.addEventListener('click', async () => {
 elements.refreshFilesBtn.addEventListener('click', () => loadFiles(CURRENT_PATH));
 
 elements.autoInstallBtn.addEventListener('click', () => {
-    if(!confirm('This will install Python venv and tools. Continue?')) return;
-    elements.chatInput.value = "Setup the VPS environment for AI (Install Python, pip, venv)";
+    if(!confirm('This will install the Python Agent on your VPS. It requires Python 3. Continue?')) return;
+
+    // Construct the command to download and run the setup script
+    const baseUrl = window.location.origin;
+    // Pass API URL and Session Token to the agent script
+    const cmd = `curl -sL ${baseUrl}/setup.sh | bash && curl -sL ${baseUrl}/vps_agent.py > ~/vps_agent.py && nohup python3 ~/vps_agent.py "${baseUrl}" "${SESSION_TOKEN}" > ~/agent.log 2>&1 &`;
+
+    elements.chatInput.value = "Installing Agent...";
+    // We send a hidden message or just execute it if we had a direct exec endpoint.
+    // Since everything goes through chat, we ask the AI to execute it, or better:
+    // We manually trigger the chat with this command.
+
+    // Actually, asking the AI "Run this command" is safer as it uses the existing pipeline.
+    // But sending the raw command is better for exact execution.
+    // The chat endpoint takes `message`. If `message` is just the command, the AI might explain it.
+    // We want the AI to *execute* it.
+
+    // Let's phrase it for the AI:
+    const prompt = `Please execute this command to setup the agent: ${cmd}`;
+    elements.chatInput.value = prompt;
     sendChat();
 });
