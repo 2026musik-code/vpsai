@@ -31,12 +31,24 @@ const elements = {
 
     saveBtn: document.getElementById('save-file'),
     refreshFilesBtn: document.getElementById('refresh-files'),
-    disconnectBtn: document.getElementById('disconnect-btn')
+    disconnectBtn: document.getElementById('disconnect-btn'),
+
+    // R2 Elements
+    tabVps: document.getElementById('tab-vps'),
+    tabCloud: document.getElementById('tab-cloud'),
+    vpsPanel: document.getElementById('vps-file-panel'),
+    r2Panel: document.getElementById('r2-file-panel'),
+    r2Tree: document.getElementById('r2-file-tree'),
+    refreshR2Btn: document.getElementById('refresh-r2'),
+    r2UploadBtn: document.getElementById('r2-upload-btn'),
+    r2UploadInput: document.getElementById('r2-upload-input')
 };
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
+    initTabs();
+    initR2();
 });
 
 function checkSession() {
@@ -338,6 +350,141 @@ elements.saveBtn.addEventListener('click', async () => {
 });
 
 elements.refreshFilesBtn.addEventListener('click', () => loadFiles(CURRENT_PATH));
+
+// --- R2 LOGIC ---
+
+function initTabs() {
+    elements.tabVps.onclick = () => switchTab('vps');
+    elements.tabCloud.onclick = () => switchTab('cloud');
+}
+
+function switchTab(tab) {
+    if (tab === 'vps') {
+        elements.tabVps.classList.add('active');
+        elements.tabCloud.classList.remove('active');
+        elements.vpsPanel.classList.remove('hidden');
+        elements.r2Panel.classList.add('hidden');
+    } else {
+        elements.tabCloud.classList.add('active');
+        elements.tabVps.classList.remove('active');
+        elements.r2Panel.classList.remove('hidden');
+        elements.vpsPanel.classList.add('hidden');
+        loadR2Files();
+    }
+}
+
+function initR2() {
+    elements.refreshR2Btn.onclick = loadR2Files;
+
+    elements.r2UploadBtn.onclick = () => elements.r2UploadInput.click();
+    elements.r2UploadInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        elements.r2UploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const res = await fetch(`${API_BASE}/storage/upload`, {
+                method: 'POST',
+                headers: { 'Authorization': SESSION_ID },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Uploaded to Cloud!', 'success');
+                loadR2Files();
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (e) {
+            showToast(e.message, 'error');
+        }
+        elements.r2UploadBtn.innerHTML = '<i class="fas fa-upload"></i>';
+        elements.r2UploadInput.value = ''; // Reset
+    };
+}
+
+async function loadR2Files() {
+    elements.r2Tree.innerHTML = '<div class="loading-spinner"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
+
+    try {
+        const res = await fetch(`${API_BASE}/storage/list`, {
+            headers: { 'Authorization': SESSION_ID }
+        });
+        const data = await res.json();
+
+        if (data.files && data.files.length > 0) {
+            elements.r2Tree.innerHTML = '';
+            data.files.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'file-item cloud-file';
+                div.innerHTML = `
+                    <i class="fas fa-file-invoice"></i>
+                    <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${file.key}</span>
+                    <div class="actions">
+                        <i class="fas fa-download" onclick="downloadR2('${file.key}')" title="Download"></i>
+                        <i class="fas fa-trash" onclick="deleteR2('${file.key}')" title="Delete"></i>
+                    </div>
+                `;
+                elements.r2Tree.appendChild(div);
+            });
+        } else {
+            elements.r2Tree.innerHTML = '<div class="empty-state">No files in Cloud Storage</div>';
+        }
+    } catch (e) {
+        elements.r2Tree.innerHTML = `<div class="term-line error">Error: ${e.message}</div>`;
+    }
+}
+
+async function downloadR2(key) {
+    try {
+        const res = await fetch(`${API_BASE}/storage/download?key=${encodeURIComponent(key)}`, {
+            headers: { 'Authorization': SESSION_ID }
+        });
+        if(res.ok) {
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = key;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            const d = await res.json();
+            throw new Error(d.error);
+        }
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+window.downloadR2 = downloadR2; // Expose to global scope for HTML onclick
+
+async function deleteR2(key) {
+    if(!confirm(`Delete ${key}?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/storage/delete?key=${encodeURIComponent(key)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': SESSION_ID }
+        });
+        const data = await res.json();
+        if(data.success) {
+            showToast('Deleted', 'success');
+            loadR2Files();
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+window.deleteR2 = deleteR2;
+
 
 // Sidebar Logic
 function toggleSidebar(sidebar) {

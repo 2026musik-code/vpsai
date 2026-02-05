@@ -10,6 +10,10 @@ compatibility_flags = ["nodejs_compat"]
 binding = "vpsai_kv"
 id = "63e333fd63a64589a3faf57d48598cbe"
 
+[[r2_buckets]]
+binding = "vpsai"
+bucket_name = "0d1733a2241079f608a208cb4c2aa9c5"
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
