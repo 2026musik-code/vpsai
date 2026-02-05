@@ -229,7 +229,7 @@ function connectSSE(text, retryCount = 0) {
 
     evtSource.addEventListener('done', (e) => {
         evtSource.close();
-        if (text.toLowerCase().includes('create') || text.toLowerCase().includes('delete')) {
+        if (text.toLowerCase().includes('create') || text.toLowerCase().includes('delete') || text.toLowerCase().includes('touch') || text.toLowerCase().includes('mkdir')) {
             loadFiles(CURRENT_PATH);
         }
     });
@@ -295,10 +295,17 @@ async function loadFiles(path = '~') {
             upDiv.className = 'file-item folder';
             upDiv.innerHTML = '<i class="fas fa-level-up-alt"></i> ..';
             upDiv.onclick = () => {
-                CURRENT_PATH = path + '/..';
+                const parts = CURRENT_PATH.split('/').filter(p => p !== '');
+                parts.pop();
+                CURRENT_PATH = parts.length === 0 ? '~' : parts.join('/');
+                if(path === '~') CURRENT_PATH = '~'; // Keep at root
                 loadFiles(CURRENT_PATH);
             };
             elements.fileTree.appendChild(upDiv);
+
+            if (data.files.length === 0) {
+                 elements.fileTree.innerHTML += '<div style="padding:10px; opacity:0.7">Empty Directory</div>';
+            }
 
             data.files.forEach(file => {
                 const div = document.createElement('div');
@@ -316,6 +323,8 @@ async function loadFiles(path = '~') {
                 };
                 elements.fileTree.appendChild(div);
             });
+        } else if (data.error) {
+            throw new Error(data.error);
         }
     } catch (err) {
         elements.fileTree.innerHTML = '<div class="term-line error">Failed to load files</div>';
@@ -343,9 +352,34 @@ elements.saveBtn.addEventListener('click', async () => {
     if (path.includes('No File')) return;
 
     const content = elements.codeEditor.value;
-    logSystem('Saving file via AI Agent...', 'system');
-    elements.chatInput.value = `Overwrite content of ${path} with:\n${content}`;
-    sendChat();
+    const btn = elements.saveBtn;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Saving...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_BASE}/write`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': SESSION_TOKEN
+            },
+            body: JSON.stringify({ path, content })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            logSystem(`Saved ${path} successfully.`, 'success');
+            showToast('File Saved', 'success');
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (err) {
+        logSystem(`Failed to save file: ${err.message}`, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 });
 
 elements.refreshFilesBtn.addEventListener('click', () => loadFiles(CURRENT_PATH));

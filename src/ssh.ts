@@ -62,28 +62,116 @@ export function runSSHCommandStream(session: any, command: string, onData: (data
     });
 }
 
-export async function listRemoteFiles(session: any, path: string) {
-    // Simple ls parsing. In production, use SFTP.
-    const cmd = `ls -F "${path}"`;
-    const { stdout } = await runSSHCommand(session, cmd);
+export function listRemoteFiles(session: any, path: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.sftp((err, sftp) => {
+                if (err) {
+                    conn.end();
+                    return reject(err);
+                }
 
-    // Parse output
-    const lines = stdout.split('\n').filter(l => l.trim() !== '');
-    const files = lines.map(line => {
-        const isDir = line.endsWith('/');
-        const name = isDir ? line.slice(0, -1) : line;
-        return {
-            name,
-            isDirectory: isDir,
-            path: path === '~' ? name : `${path}/${name}` // Naive path joining
-        };
+                // Resolve path relative to home if it starts with ~
+                let remotePath = path;
+                if (path === '~' || path === '') remotePath = '.';
+                // Note: sftp.readdir('.') usually lists the user's home dir.
+
+                sftp.readdir(remotePath, (err, list) => {
+                    if (err) {
+                        conn.end();
+                        return reject(err);
+                    }
+
+                    const files = list.map(item => {
+                        const isDir = item.attrs.isDirectory();
+                        return {
+                            name: item.filename,
+                            isDirectory: isDir,
+                            // If remotePath is '.', we shouldn't prefix it. But for subdirs we should.
+                            // A better approach is to ask 'pwd' first, but for now assuming 'path' input is valid.
+                            // If path is '~', we treat it as root for the UI view.
+                            path: (path === '~' || path === '.') ? item.filename : `${path}/${item.filename}`
+                        };
+                    });
+
+                    // Filter out hidden files if desired, or keep them.
+                    // Let's keep them but maybe sort folders first.
+                    files.sort((a, b) => {
+                         if (a.isDirectory === b.isDirectory) {
+                             return a.name.localeCompare(b.name);
+                         }
+                         return a.isDirectory ? -1 : 1;
+                    });
+
+                    conn.end();
+                    resolve(files);
+                });
+            });
+        }).on('error', (err) => {
+            reject(err);
+        }).connect({
+            host: session.ip,
+            port: 22,
+            username: session.user,
+            password: session.pass,
+            readyTimeout: 10000,
+        });
     });
-    return files;
 }
 
-export async function readRemoteFile(session: any, path: string) {
-    const cmd = `cat "${path}"`;
-    const { stdout, stderr } = await runSSHCommand(session, cmd);
-    if (stderr) throw new Error(stderr);
-    return stdout;
+export function readRemoteFile(session: any, path: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.sftp((err, sftp) => {
+                if (err) {
+                    conn.end();
+                    return reject(err);
+                }
+                // sftp.readFile returns a Buffer
+                sftp.readFile(path, (err, buffer) => {
+                    conn.end();
+                    if (err) return reject(err);
+                    resolve(buffer.toString('utf8'));
+                });
+            });
+        }).on('error', (err) => {
+            reject(err);
+        }).connect({
+            host: session.ip,
+            port: 22,
+            username: session.user,
+            password: session.pass,
+            readyTimeout: 10000,
+        });
+    });
+}
+
+export function writeRemoteFile(session: any, path: string, content: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.sftp((err, sftp) => {
+                if (err) {
+                    conn.end();
+                    return reject(err);
+                }
+                const buffer = Buffer.from(content, 'utf8');
+                sftp.writeFile(path, buffer, (err) => {
+                    conn.end();
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        }).on('error', (err) => {
+            reject(err);
+        }).connect({
+            host: session.ip,
+            port: 22,
+            username: session.user,
+            password: session.pass,
+            readyTimeout: 10000,
+        });
+    });
 }
