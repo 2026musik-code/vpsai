@@ -9,13 +9,13 @@ export type GeminiResponse = {
 // For now, we will pass them through or map them if we know they are aliases.
 function resolveModel(modelInput: string): string {
     const map: Record<string, string> = {
-        'gemini-2.5-flash': 'gemini-1.5-flash', // Mapping to stable for reliability, or change if real
-        'gemini-2.5-pro': 'gemini-1.5-pro',
-        'gemini-3.0-flash': 'gemini-1.5-flash',
-        'gemini-3.0-pro': 'gemini-1.5-pro',
+        'gemini-2.5-flash': 'gemini-1.5-flash-latest', // Mapping to stable for reliability, or change if real
+        'gemini-2.5-pro': 'gemini-1.5-pro-latest',
+        'gemini-3.0-flash': 'gemini-1.5-flash-latest',
+        'gemini-3.0-pro': 'gemini-1.5-pro-latest',
         // Keep originals if supported
-        'gemini-1.5-flash': 'gemini-1.5-flash',
-        'gemini-1.5-pro': 'gemini-1.5-pro',
+        'gemini-1.5-flash': 'gemini-1.5-flash-latest',
+        'gemini-1.5-pro': 'gemini-1.5-pro-latest',
         'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp'
     };
 

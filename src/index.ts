@@ -7,7 +7,7 @@ type Bindings = {
     vpsai_kv: KVNamespace;
 }
 
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: Bindings, Variables: { sessionId: string } }>();
 
 // --- MIDDLEWARE ---
 app.use('*', async (c, next) => {
