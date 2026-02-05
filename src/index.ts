@@ -5,6 +5,7 @@ import { getGeminiResponse } from './gemini';
 type Bindings = {
     ASSETS: Fetcher;
     vpsai_kv: KVNamespace;
+    vpsai_r2: R2Bucket;
 }
 
 const app = new Hono<{ Bindings: Bindings, Variables: { sessionId: string } }>();
@@ -200,6 +201,90 @@ app.post('/api/write', async (c) => {
         const res = await runAgentTask(c, sessionId, 'write', { path, content });
         if(res.success) return c.json({ success: true });
         else throw new Error(res.output);
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// --- R2 STORAGE API ---
+
+// API: List R2 Files
+app.get('/api/storage/list', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    try {
+        const list = await c.env.vpsai_r2.list();
+        const files = list.objects.map(obj => ({
+            key: obj.key,
+            size: obj.size,
+            uploaded: obj.uploaded
+        }));
+        return c.json({ files });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// API: Upload to R2
+app.post('/api/storage/upload', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const body = await c.req.parseBody();
+    const file = body['file'];
+
+    if (!file || !(file instanceof File)) {
+        return c.json({ error: 'No file uploaded' }, 400);
+    }
+
+    try {
+        await c.env.vpsai_r2.put(file.name, file);
+        return c.json({ success: true });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// API: Download from R2
+app.get('/api/storage/download', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    // Note: For direct browser downloads, checking headers might be tricky if using standard links.
+    // For now, we enforce auth via header (fetch).
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const key = c.req.query('key');
+    if (!key) return c.json({ error: 'No key provided' }, 400);
+
+    try {
+        const object = await c.env.vpsai_r2.get(key);
+        if (object === null) {
+            return c.json({ error: 'Object Not Found' }, 404);
+        }
+
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set('etag', object.httpEtag);
+
+        return new Response(object.body, {
+            headers,
+        });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
+    }
+});
+
+// API: Delete from R2
+app.delete('/api/storage/delete', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const key = c.req.query('key');
+    if (!key) return c.json({ error: 'No key provided' }, 400);
+
+    try {
+        await c.env.vpsai_r2.delete(key);
+        return c.json({ success: true });
     } catch (e: any) {
         return c.json({ error: e.message }, 500);
     }
