@@ -28,6 +28,8 @@ const elements = {
     overlay: document.getElementById('sidebar-overlay'),
 
     agentStatus: document.getElementById('agent-status'),
+    quotaDisplay: document.getElementById('ai-quota-display'),
+    modelSelect: document.getElementById('dashboard-model-select'),
 
     saveBtn: document.getElementById('save-file'),
     refreshFilesBtn: document.getElementById('refresh-files'),
@@ -49,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     initTabs();
     initR2();
+    initSettings();
 });
 
 function checkSession() {
@@ -169,6 +172,65 @@ function pollConnection() {
             console.error('Poll error', e);
         }
     }, 2000);
+}
+
+// Start polling for usage/quota updates when dashboard is active
+let dashboardPoll;
+function startDashboardPoll() {
+    if (dashboardPoll) clearInterval(dashboardPoll);
+
+    // Initial fetch to set model
+    fetchStatus();
+
+    dashboardPoll = setInterval(fetchStatus, 5000);
+}
+
+async function fetchStatus() {
+    if (!SESSION_ID) return;
+    try {
+        const res = await fetch(`${API_BASE}/session/status`, {
+            headers: { 'Authorization': SESSION_ID }
+        });
+        const data = await res.json();
+
+        if (data.usage !== undefined) {
+            elements.quotaDisplay.querySelector('span').textContent = `Quota: ${data.usage}`;
+        }
+
+        // Sync model selector if changed externally (or initial load)
+        if (data.model && document.activeElement !== elements.modelSelect) {
+            elements.modelSelect.value = data.model;
+        }
+
+    } catch (e) {
+        // silent error
+    }
+}
+
+function initSettings() {
+    elements.modelSelect.addEventListener('change', async (e) => {
+        const newModel = e.target.value;
+        try {
+            const res = await fetch(`${API_BASE}/session/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': SESSION_ID
+                },
+                body: JSON.stringify({ model: newModel })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(`Model switched to ${newModel}`, 'success');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (err) {
+            showToast('Failed to switch model: ' + err.message, 'error');
+            // Revert selection
+            fetchStatus();
+        }
+    });
 }
 
 // --- DASHBOARD LOGIC ---
@@ -370,6 +432,7 @@ function switchTab(tab) {
         elements.r2Panel.classList.remove('hidden');
         elements.vpsPanel.classList.add('hidden');
         loadR2Files();
+    startDashboardPoll();
     }
 }
 

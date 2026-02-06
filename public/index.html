@@ -82,6 +82,10 @@
                     <div class="pulse"></div>
                     <span>Agent Online</span>
                 </div>
+                <div class="quota-pill" id="ai-quota-display">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Quota: 0</span>
+                </div>
             </div>
 
             <div class="nav-right">
@@ -158,6 +162,14 @@
             <aside id="chat-sidebar" class="sidebar glass-panel right-panel">
                 <div class="sidebar-header">
                     <h3><i class="fas fa-sparkles"></i> AI ASSISTANT</h3>
+                    <div class="model-selector-mini">
+                        <select id="dashboard-model-select">
+                            <option value="gemini-2.5-flash">2.5 Flash</option>
+                            <option value="gemini-2.5-pro">2.5 Pro</option>
+                            <option value="gemini-3.0-flash">3.0 Flash</option>
+                            <option value="gemini-3.0-pro">3.0 Pro</option>
+                        </select>
+                    </div>
                 </div>
                 <div id="chat-history" class="chat-content custom-scrollbar">
                     <div class="chat-msg ai animate-fade">

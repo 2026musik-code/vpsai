@@ -73,9 +73,39 @@ app.get('/api/session/status', async (c) => {
             }
         }
 
-        return c.json({ status: session.status, lastHeartbeat });
+        return c.json({
+            status: session.status,
+            lastHeartbeat,
+            model: session.model,
+            usage: session.usage || 0
+        });
     } catch (e: any) {
          return c.json({ error: "KV Error" }, 500);
+    }
+});
+
+// 3. Update Session (Model)
+app.post('/api/session/update', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    try {
+        const body = await c.req.json();
+        const { model } = body;
+
+        if (!model) return c.json({ error: 'Model required' }, 400);
+
+        const sessionData = await c.env.vpsai_kv.get(`session:${sessionId}`);
+        if (!sessionData) return c.json({ error: 'Invalid Session' }, 401);
+
+        const session = JSON.parse(sessionData);
+        session.model = model;
+
+        await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(session));
+
+        return c.json({ success: true, model });
+    } catch (e: any) {
+        return c.json({ error: e.message }, 500);
     }
 });
 
@@ -315,6 +345,10 @@ app.get('/api/chat-stream', async (c) => {
         try {
             // 1. Ask Gemini
             const aiResponse = await getGeminiResponse(session.apiKey, session.model, message!, currentPath);
+
+            // Increment Usage
+            session.usage = (session.usage || 0) + 1;
+            await c.env.vpsai_kv.put(`session:${sessionId}`, JSON.stringify(session));
 
             await stream.writeSSE({
                 event: 'ai-response',
