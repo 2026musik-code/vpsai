@@ -44,11 +44,29 @@ curl -sL "$API_URL/vps_agent.py" -o vps_agent.py
 echo ">>> Installing dependencies..."
 pip3 install requests --break-system-packages 2>/dev/null || pip3 install requests
 
-# 6. Run Agent
-echo ">>> Starting Agent..."
+# 6. Run Agent (Daemon Mode)
+echo ">>> Configuring Agent as a background service..."
+
+# Create a robust runner script that restarts the agent if it crashes
+cat > run_agent.sh <<EOF
+#!/bin/bash
+while true; do
+    echo "Starting VPS Agent..." >> agent.log
+    python3 vps_agent.py "$API_URL" "$TOKEN" >> agent.log 2>&1
+    echo "Agent crashed/stopped. Restarting in 3 seconds..." >> agent.log
+    sleep 3
+done
+EOF
+
+chmod +x run_agent.sh
+
 # Kill existing agent if running
 pkill -f vps_agent.py || true
+pkill -f run_agent.sh || true
 
-nohup python3 vps_agent.py "$API_URL" "$TOKEN" > agent.log 2>&1 &
-echo ">>> Agent Started! (PID: $!)"
-echo ">>> You can close this terminal now."
+# Start the runner in background
+nohup ./run_agent.sh > /dev/null 2>&1 &
+
+echo ">>> Agent Started in Daemon Mode! (PID: $!)"
+echo ">>> Logs available at $PROJECT_DIR/agent.log"
+echo ">>> You can close this terminal now. The agent will auto-restart if it crashes."

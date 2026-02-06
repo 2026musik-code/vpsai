@@ -61,11 +61,24 @@ def main():
                 try:
                     if action == 'exec':
                         cmd = payload.get('command')
-                        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, executable='/bin/bash')
-                        stdout, stderr = process.communicate()
-                        result['output'] = stdout + stderr
-                        result['exit_code'] = process.returncode
-                        result['success'] = (process.returncode == 0)
+                        # Use subprocess.run with timeout to prevent hanging forever
+                        try:
+                            # Run with timeout (e.g., 60 seconds for normal commands)
+                            # For long running tasks, user should use 'nohup' or '&'
+                            proc = subprocess.run(
+                                cmd,
+                                shell=True,
+                                executable='/bin/bash',
+                                capture_output=True,
+                                text=True,
+                                timeout=120
+                            )
+                            result['output'] = proc.stdout + proc.stderr
+                            result['exit_code'] = proc.returncode
+                            result['success'] = (proc.returncode == 0)
+                        except subprocess.TimeoutExpired:
+                            result['output'] = "Error: Command timed out (limit: 120s)."
+                            result['success'] = False
 
                     elif action == 'read':
                         path = os.path.expanduser(payload.get('path'))
@@ -79,6 +92,11 @@ def main():
                     elif action == 'write':
                         path = os.path.expanduser(payload.get('path'))
                         content = payload.get('content')
+                        # Ensure directory exists
+                        dir_path = os.path.dirname(path)
+                        if dir_path and not os.path.exists(dir_path):
+                            os.makedirs(dir_path, exist_ok=True)
+
                         with open(path, 'w', encoding='utf-8') as f:
                             f.write(content)
                         result['success'] = True
@@ -105,7 +123,8 @@ def main():
                          path = os.path.expanduser(payload.get('path'))
                          if os.path.exists(path):
                              if os.path.isdir(path):
-                                 os.rmdir(path)
+                                 import shutil
+                                 shutil.rmtree(path)
                              else:
                                  os.remove(path)
                              result['success'] = True
@@ -114,10 +133,13 @@ def main():
                              result['output'] = "Path not found"
 
                 except Exception as e:
-                    result['output'] = f"Error: {str(e)}"
+                    result['output'] = f"Agent Execution Error: {str(e)}"
 
                 # Send Result
-                requests.post(f"{API_URL}/api/agent/result", headers=HEADERS, json=result)
+                try:
+                    requests.post(f"{API_URL}/api/agent/result", headers=HEADERS, json=result, timeout=10)
+                except Exception as e:
+                    print(f"!!! Failed to send result: {e}")
 
         except KeyboardInterrupt:
             break
