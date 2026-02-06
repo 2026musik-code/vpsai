@@ -20,3 +20,506 @@ Your worker has access to the following bindings:
 [wrangler:inf] Ready on http://localhost:42067
 ⎔ Reloading local server...
 ⎔ Reloading local server...
+⎔ Reloading local server...
+⎔ Reloading local server...
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 3 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    The module "./dist/index.js" was not found on the file system:
+
+      node_modules/hono/package.json:40:16:
+  [37m      40 │       "import": [32m"./dist/index.js"[37m,
+           ╵                 [32m~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    The module "./dist/helper/streaming/index.js" was not found on the file system:
+
+      node_modules/hono/package.json:275:16:
+  [37m      275 │       "import": [32m"./dist/helper/streaming/index.js"[37m,
+            ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 9 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/modules-watch-stub.js"[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:2:38:
+  [37m      2 │ ...E_0__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-insertion-facade.js:3:34:
+  [37m      3 │ ...E_1__ from [32m"/app/node_modules/wrangler/templates/middleware/midd[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "/app/node_modules/wrangler/templates/middleware/common.ts"[0m
+
+      .wrangler/tmp/bundle-1PWWzT/middleware-loader.entry.ts:7:67:
+  [37m      7 │ ...her } from [32m"/app/node_modules/wrangler/templates/middleware/comm[37m...
+          ╵               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not read from file: /app/node_modules/unenv/dist/runtime/node/perf_hooks.mjs[0m
+
+      node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs:10:7:
+  [37m      10 │ } from [32m"node:perf_hooks"[37m;
+           ╵        [32m~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/console"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/console"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "@cloudflare/unenv-preset/node/process"[0m
+
+      node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process:1:41:
+  [37m      1 │ ...lt as defaultExport } from [32m"@cloudflare/unenv-preset/node/process"[37m;
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "@cloudflare/unenv-preset/node/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mBuild failed with 6 errors:[0m
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "unenv/node/console"[0m
+
+      node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs:9:7:
+  [37m      9 │ } from [32m"unenv/node/console"[37m;
+          ╵        [32m~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "unenv/node/console" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "unenv/node/internal/process/hrtime"[0m
+
+      node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs:1:38:
+  [37m      1 │ ... hrtime as UnenvHrTime } from [32m"unenv/node/internal/process/hrtime"[37m;
+          ╵                                  [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "unenv/node/internal/process/hrtime" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "unenv/node/internal/process/process"[0m
+
+      node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs:2:40:
+  [37m      2 │ ...ocess as UnenvProcess } from [32m"unenv/node/internal/process/process"[37m;
+          ╵                                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "unenv/node/internal/process/process" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not read from file: /app/node_modules/unenv/dist/runtime/node/perf_hooks.mjs[0m
+
+      node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs:10:7:
+  [37m      10 │ } from [32m"node:perf_hooks"[37m;
+           ╵        [32m~~~~~~~~~~~~~~~~~[0m
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono"[0m
+
+      src/index.ts:1:21:
+  [37m      1 │ import { Hono } from [32m'hono'[37m;
+          ╵                      [32m~~~~~~[0m
+
+    You can mark the path "hono" as external to exclude it from the bundle, which will remove this error.
+
+
+  [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mCould not resolve "hono/streaming"[0m
+
+      src/index.ts:2:26:
+  [37m      2 │ import { streamSSE } from [32m'hono/streaming'[37m;
+          ╵                           [32m~~~~~~~~~~~~~~~~[0m
+
+    You can mark the path "hono/streaming" as external to exclude it from the bundle, which will remove this error.
+
+
+
+
+⎔ Reloading local server...
+🪵  Logs were written to "/home/jules/.config/.wrangler/logs/wrangler-2026-02-05_23-41-39_483.log"

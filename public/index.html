@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Ace Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -143,7 +145,7 @@
                         </div>
                         <button id="save-file" class="btn-primary small"><i class="fas fa-save"></i> Save</button>
                     </div>
-                    <textarea id="code-editor" class="custom-scrollbar" placeholder="// Select a file to view or edit..."></textarea>
+                    <div id="code-editor" style="width: 100%; height: calc(100% - 50px);"></div>
                 </div>
 
                 <!-- TERMINAL -->

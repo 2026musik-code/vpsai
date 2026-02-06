@@ -47,12 +47,26 @@ const elements = {
 };
 
 // --- INITIALIZATION ---
+let editor; // Ace Editor Instance
+
 document.addEventListener('DOMContentLoaded', () => {
     checkSession();
     initTabs();
     initR2();
     initSettings();
+    initEditor();
 });
+
+function initEditor() {
+    editor = ace.edit("code-editor");
+    editor.setTheme("ace/theme/dracula"); // Fits the dark theme
+    editor.session.setMode("ace/mode/text");
+    editor.setOptions({
+        fontSize: "14px",
+        showPrintMargin: false,
+        wrap: true
+    });
+}
 
 function checkSession() {
     const storedId = localStorage.getItem('vpsai_session');
@@ -379,21 +393,31 @@ async function loadFiles(path = '~') {
 
 async function loadFileContent(path) {
     elements.currentFileLabel.textContent = path;
-    elements.codeEditor.value = 'Loading...';
+    editor.setValue('Loading...', -1);
+
+    // Auto-detect mode based on extension
+    const ext = path.split('.').pop();
+    const modes = {
+        'js': 'javascript', 'ts': 'typescript', 'py': 'python', 'html': 'html',
+        'css': 'css', 'json': 'json', 'md': 'markdown', 'sh': 'sh'
+    };
+    const mode = modes[ext] || 'text';
+    editor.session.setMode(`ace/mode/${mode}`);
+
     try {
         const res = await fetch(`${API_BASE}/read?path=${encodeURIComponent(path)}`, {
             headers: { 'Authorization': SESSION_ID }
         });
         const data = await res.json();
-        elements.codeEditor.value = data.content || '';
+        editor.setValue(data.content || '', -1); // -1 moves cursor to start
     } catch (e) {
-        elements.codeEditor.value = '// Error: ' + e.message;
+        editor.setValue('// Error: ' + e.message, -1);
     }
 }
 
 elements.saveBtn.addEventListener('click', async () => {
     const path = elements.currentFileLabel.textContent;
-    const content = elements.codeEditor.value;
+    const content = editor.getValue();
     elements.saveBtn.innerHTML = '<i class="fas fa-spin fa-spinner"></i>';
 
     try {
