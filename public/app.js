@@ -291,12 +291,43 @@ function sendChat() {
     connectSSE(text);
 }
 
-function connectSSE(text) {
+async function connectSSE(text) {
     const params = new URLSearchParams({
         message: text,
         currentPath: CURRENT_PATH,
         token: SESSION_ID
     });
+
+    // Attempt to send current file context
+    try {
+        const content = editor ? editor.getValue() : "";
+        // Check if a file is actually open (label not empty and not default)
+        const path = elements.currentFileLabel.textContent;
+
+        if (path && content && content !== "Loading..." && content.trim().length > 0) {
+            // Show small indicator
+            const status = document.getElementById('agent-status');
+            const originalHtml = status ? status.innerHTML : '';
+            if(status) status.innerHTML = '<div class="pulse" style="background: #fbbf24;"></div><span>Syncing...</span>';
+
+            const res = await fetch(`${API_BASE}/chat/context`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': SESSION_ID
+                },
+                body: JSON.stringify({ content, path })
+            });
+            const data = await res.json();
+
+            if (data.success && data.contextId) {
+                params.append('contextId', data.contextId);
+            }
+            if(status) status.innerHTML = originalHtml;
+        }
+    } catch (e) {
+        console.warn("Context sync failed", e);
+    }
 
     const evtSource = new EventSource(`${API_BASE}/chat-stream?${params.toString()}`);
 

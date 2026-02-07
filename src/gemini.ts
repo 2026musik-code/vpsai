@@ -39,7 +39,7 @@ function resolveModel(modelInput: string): string {
     return map[modelInput] || modelInput;
 }
 
-export async function getGeminiResponse(apiKey: string, model: string, userPrompt: string, currentPath: string): Promise<GeminiResponse> {
+export async function getGeminiResponse(apiKey: string, model: string, userPrompt: string, currentPath: string, fileContext: string = ""): Promise<GeminiResponse> {
 
     const apiModel = resolveModel(model);
 
@@ -75,6 +75,7 @@ export async function getGeminiResponse(apiKey: string, model: string, userPromp
     If the user asks to "Execute" or "Run" something on the VPS, explain that you will save the script to Cloud Storage first, and they must click "Deploy".
 
     Current Context: ${currentPath}
+    ${fileContext ? `\n[Active File Context]\n${fileContext}\n` : ""}
     User Query: ${userPrompt}
     `;
 
