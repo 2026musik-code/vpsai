@@ -356,11 +356,30 @@ app.post('/api/deploy', async (c) => {
     }
 });
 
+// API: Store Chat Context (To handle large file content)
+app.post('/api/chat/context', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const body = await c.req.json();
+    const { content, path } = body;
+
+    // Store context in KV with short TTL (e.g. 60s)
+    const contextId = crypto.randomUUID();
+    // Limit content size if necessary (e.g. 100KB)
+    const truncatedContent = content ? content.slice(0, 100000) : "";
+
+    await c.env.vpsai_kv.put(`chat:context:${contextId}`, JSON.stringify({ content: truncatedContent, path }), { expirationTtl: 60 });
+
+    return c.json({ success: true, contextId });
+});
+
 // API: Chat (Streaming)
 app.get('/api/chat-stream', async (c) => {
     const sessionId = c.req.query('token');
     const message = c.req.query('message');
     const currentPath = c.req.query('currentPath') || '~';
+    const contextId = c.req.query('contextId');
 
     if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
 
@@ -374,10 +393,20 @@ app.get('/api/chat-stream', async (c) => {
         return c.json({ error: "KV Error" }, 500);
     }
 
+    // Retrieve Context if provided
+    let fileContext = "";
+    if (contextId) {
+        const contextData = await c.env.vpsai_kv.get(`chat:context:${contextId}`);
+        if (contextData) {
+            const ctx = JSON.parse(contextData);
+            fileContext = `\n--- OPEN FILE CONTEXT ---\nFile: ${ctx.path}\nContent:\n\`\`\`\n${ctx.content}\n\`\`\`\n--- END CONTEXT ---\n`;
+        }
+    }
+
     return streamSSE(c, async (stream) => {
         try {
             // 1. Ask Gemini
-            const aiResponse = await getGeminiResponse(session.apiKey, session.model, message!, currentPath);
+            const aiResponse = await getGeminiResponse(session.apiKey, session.model, message!, currentPath, fileContext);
 
             // Increment Usage
             session.usage = (session.usage || 0) + 1;
