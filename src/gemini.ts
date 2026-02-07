@@ -47,20 +47,34 @@ export async function getGeminiResponse(apiKey: string, model: string, userPromp
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
 
     const systemPrompt = `
-    You are an AI assistant managing a Linux VPS. The user is currently at path: ${currentPath}.
-    Your goal is to help the user manage the server, write code, and execute commands.
+    You are an AI assistant helping a developer manage a Cloud Workspace.
+
+    IMPORTANT: You are working in a Cloud Staging Environment (R2 Storage).
+    You DO NOT have direct access to the live VPS yet. All file operations (write, list, read) are performed on Cloud Storage.
+
+    The user can "Deploy" files from Cloud Storage to the VPS manually.
+
+    Your goal is to help the user write code and manage files in this Cloud Staging Area.
 
     INSTRUCTIONS:
-    1. If the user asks to perform an action on the server (install, list, delete, edit), generate the appropriate Bash command.
-    2. Return the response in strict JSON format.
-    3. JSON Format:
+    1. If the user asks to create or edit a file, generate a 'write' command.
+    2. If the user asks to list files, generate a 'ls' or 'list' command.
+    3. Return the response in strict JSON format.
+    4. JSON Format:
        {
-         "text": "Explanation of what you are doing or answer to question",
-         "command": "The exact bash command to run (optional)"
+         "text": "Explanation...",
+         "command": "write <filename> <content> | list | read <filename>"
        }
-    4. If the user just wants to chat, return "command": null.
-    5. Handle "Auto Install AI Environment" request by running: "./setup_vps.sh" (assume it exists or curl it first if needed).
 
+    COMMAND SYNTAX (Virtual, handled by backend):
+    - WRITE FILE:  write:filename.ext:content_base64_or_text
+    - LIST FILES:  list
+    - READ FILE:   read:filename.ext
+
+    For simple bash commands (echo, cat, ls) just use the command string, the system will interpret 'ls' as a cloud list.
+    If the user asks to "Execute" or "Run" something on the VPS, explain that you will save the script to Cloud Storage first, and they must click "Deploy".
+
+    Current Context: ${currentPath}
     User Query: ${userPrompt}
     `;
 

@@ -323,6 +323,39 @@ app.delete('/api/storage/delete', async (c) => {
     }
 });
 
+// API: Deploy R2 File to VPS
+app.post('/api/deploy', async (c) => {
+    const sessionId = c.req.header('Authorization');
+    if (!sessionId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const body = await c.req.json();
+    const { key, targetPath } = body;
+
+    if (!key) return c.json({ error: 'Source key required' }, 400);
+
+    // Default target path is home directory + filename if not specified
+    const finalPath = targetPath || `~/${key}`;
+
+    try {
+        // 1. Get content from R2
+        const object = await c.env.vpsai_r2.get(key);
+        if (!object) return c.json({ error: 'File not found in Cloud Storage' }, 404);
+
+        const content = await object.text();
+
+        // 2. Send WRITE task to VPS Agent
+        const res = await runAgentTask(c, sessionId, 'write', { path: finalPath, content });
+
+        if (res.success) {
+            return c.json({ success: true, path: finalPath });
+        } else {
+            throw new Error(res.output);
+        }
+    } catch (e: any) {
+        return c.json({ error: `Deploy Failed: ${e.message}` }, 500);
+    }
+});
+
 // API: Chat (Streaming)
 app.get('/api/chat-stream', async (c) => {
     const sessionId = c.req.query('token');
@@ -355,12 +388,47 @@ app.get('/api/chat-stream', async (c) => {
                 data: aiResponse.text || "No response text generated.",
             });
 
-            // 2. Execute Command
+            // 2. Execute Command (INTERCEPTED FOR CLOUD STORAGE)
             if (aiResponse.command) {
                 await stream.writeSSE({ event: 'command', data: aiResponse.command });
+
                 try {
-                    const res = await runAgentTask(c, sessionId, 'exec', { command: aiResponse.command });
-                    await stream.writeSSE({ event: 'output', data: res.output });
+                    const cmd = aiResponse.command.trim();
+
+                    // -- INTERCEPT: LIST --
+                    if (cmd === 'list' || cmd === 'ls' || cmd === 'll') {
+                        const list = await c.env.vpsai_r2.list();
+                        const files = list.objects.map(o => o.key).join('\n');
+                        await stream.writeSSE({ event: 'output', data: files || "(Empty)" });
+
+                    // -- INTERCEPT: WRITE --
+                    } else if (cmd.startsWith('write:')) {
+                        // Format: write:filename:content
+                        const parts = cmd.split(':');
+                        if (parts.length >= 3) {
+                            const filename = parts[1];
+                            const content = parts.slice(2).join(':'); // Rejoin rest
+                            await c.env.vpsai_r2.put(filename, content);
+                            await stream.writeSSE({ event: 'output', data: `Saved ${filename} to Cloud Storage.` });
+                        } else {
+                            throw new Error("Invalid write format");
+                        }
+
+                    // -- INTERCEPT: READ --
+                    } else if (cmd.startsWith('read:') || cmd.startsWith('cat ')) {
+                        const filename = cmd.startsWith('read:') ? cmd.split(':')[1] : cmd.split(' ')[1];
+                        const obj = await c.env.vpsai_r2.get(filename);
+                        if(obj) {
+                             const text = await obj.text();
+                             await stream.writeSSE({ event: 'output', data: text });
+                        } else {
+                             await stream.writeSSE({ event: 'output', data: "File not found in Cloud Storage." });
+                        }
+
+                    } else {
+                         await stream.writeSSE({ event: 'output', data: "Command interpreted as Cloud Operation. Use the dashboard to Deploy to VPS." });
+                    }
+
                 } catch (err: any) {
                     await stream.writeSSE({ event: 'error', data: err.message });
                 }

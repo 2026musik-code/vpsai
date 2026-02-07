@@ -456,9 +456,13 @@ function switchTab(tab) {
         elements.r2Panel.classList.remove('hidden');
         elements.vpsPanel.classList.add('hidden');
         loadR2Files();
-    startDashboardPoll();
     }
 }
+
+// Initial Load: Default to R2
+setTimeout(() => {
+    switchTab('cloud');
+}, 500);
 
 function initR2() {
     elements.refreshR2Btn.onclick = loadR2Files;
@@ -512,6 +516,9 @@ async function loadR2Files() {
                     <i class="fas fa-file-invoice"></i>
                     <span style="flex:1; overflow:hidden; text-overflow:ellipsis;">${file.key}</span>
                     <div class="actions">
+                        <button class="icon-btn tiny deploy-btn" onclick="deployToVPS('${file.key}')" title="Deploy to VPS">
+                            <i class="fas fa-rocket"></i>
+                        </button>
                         <i class="fas fa-download" onclick="downloadR2('${file.key}')" title="Download"></i>
                         <i class="fas fa-trash" onclick="deleteR2('${file.key}')" title="Delete"></i>
                     </div>
@@ -571,6 +578,39 @@ async function deleteR2(key) {
     }
 }
 window.deleteR2 = deleteR2;
+
+async function deployToVPS(key) {
+    if (!confirm(`Deploy '${key}' to VPS Home Directory?`)) return;
+
+    showToast(`Deploying ${key}...`, 'info');
+
+    try {
+        const res = await fetch(`${API_BASE}/deploy`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': SESSION_ID
+            },
+            body: JSON.stringify({
+                key: key,
+                targetPath: '~/' + key // Default to home
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            showToast(`Successfully Deployed to ${data.path}`, 'success');
+            logSystem(`Deployed ${key} to VPS: ${data.path}`, 'success');
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (e) {
+        showToast(`Deployment Failed: ${e.message}`, 'error');
+        logSystem(`Deployment Failed: ${e.message}`, 'error');
+    }
+}
+window.deployToVPS = deployToVPS;
 
 
 // Sidebar Logic
